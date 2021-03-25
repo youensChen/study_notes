@@ -1,0 +1,1661 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 数据结构
+
+## 数组
+
+### 数组中重复的数字-P39
+
+````txt
+对于一个长度为n的数组，里面的元素的大小都在0 ~ n-1，里面有任意个元素是重复的，找出任意一个重复的数字。
+````
+
+#### 方法一
+
+排列数组，然后去遍历有没有重复的元素，时间O(nlogn),空间O(1)
+
+#### 方法二
+
+利用哈希表，遍历数组，出现则去哈希表中找，若已有，则找到重复的，若无，则加入哈希表，时间O（n），空间O（n）
+
+#### 方法三
+
+对数组内的元素进行重排，遍历数组，若一个元素a[i]的值不等于它在数组位置中的下标i，如果a[i]与a[a[i]]相等，则返回；否则将它与下标为a[i]的元素a[a[i]]进行交换，直到相等。时间O(n), 空间O(1)。
+
+````java
+public int duplicate(int []numbers){
+        if (numbers == null || numbers.length==0){
+            return 0;
+        }
+        int len = numbers.length;
+        for (int i = 0; i < len; i++) { // 元素的值不在0 ~ n-1
+            if(numbers[i] < 0 || numbers[i] > len - 1){
+                return -1;
+            }
+        }
+        int temp;
+        for (int i = 0; i < len; i++) {
+            while (numbers[i] != i){
+                if(numbers[i] == numbers[numbers[i]]){
+                    return numbers[i];
+                }
+                temp = numbers[numbers[i]];
+                numbers[numbers[i]] = numbers[i];
+                numbers[i] = temp;
+            }
+        }
+        return -1;
+    }
+````
+
+### 不修改数组找出重复数字-P42
+
+```` txt
+长度为 n+1 的数组里所有数字都在 1 ~ n，不修改数组找出重复的数字
+````
+
+
+
+#### 方法一
+
+哈希表，但是空间付杂度为O（n）
+
+#### 方法二
+
+把数组分为1~n中间的m为两部分，统计数组中1~m的元素的个数，如果超过m，则证明这个范围内的元素有重复，继续减治。时间O(nlogn)，空间O(1)，相当于时间换空间。
+
+````java
+public class Solution {
+
+    public int getDuplication(int []numbers){
+        if(numbers == null || numbers.length == 0){
+            return -1;
+        }
+        int start = 1;
+        int end = numbers.length - 1;
+        while (end >= start) {
+            int middle = ((end - start) >> 1) + start;
+            int count = countRange(numbers, start, middle);
+            if (end == start) {
+                if (count > 1) {
+                    return start;
+                }else {
+                    break;
+                }
+            }
+            if (count > (middle - start + 1)) {
+                end = middle;
+            }else {
+                start = middle + 1;
+            }
+
+        }
+        return -1;
+    }
+
+    private int countRange(int []numbers, int start, int end){
+        if(numbers == null){
+            return 0;
+        }
+        int count = 0;
+        for (int i = 0; i < numbers.length; i++) {
+            if(numbers[i] >= start && numbers[i] <= end){
+                count++;
+            }
+        }
+        return count;
+    }
+
+}
+````
+
+
+
+### 二维数组中的查找-P44
+
+```` txt
+一个二维数组，每一行都升序排序，每一列从上到下都递增，输入一个整数，判断该二维数组中是否含有该整数。
+````
+
+```txt
+1 2 8  9
+2 4 9  12
+4 7 10 13
+6 8 11 15 
+对于这个数组，查找数字7。一般地，选取数组右上角的数字i，若i == 7，则查找结束；若i > 7，则删除i所在的列（i为该列最小元素）；若i < 7，则删除i所在的行（i为该行最大元素）。
+```
+
+
+
+#### 方法一
+
+~~~java
+public class Solution {
+
+    public boolean findNumFromMatrix(int [][]matrix, int find){
+        if(matrix == null || matrix.length==0 || (matrix.length == 1 && matrix[0].length == 0)){
+            return false;
+        }
+        int right = matrix[0].length - 1;
+        int top = 0;
+        int bottom = matrix.length - 1;
+        while (right >= 0 && top <= bottom) {
+            if(matrix[top][right] == find){
+                return true;
+            }else if(matrix[top][right] > find){
+                right--;
+            }else {
+                top++;
+            }
+        }
+        return false;
+    }
+}
+~~~
+
+#### 方法二
+
+也可以取左上角元素
+
+
+
+## 字符串
+
+### 替换空格-P51
+
+```txt
+实现一个函数，把字符串中的每一个空格都替换为 %20。
+```
+
+#### 方法一
+
+遍历字符串，遇到空格，则把它替换为 %20，同时将后面的字符串向后移动两位。时间复杂度为O（n^2），较差。
+
+#### 方法二
+
+首先遍历一次字符串，计算空格的数量，然后new一个新数组，接下来一个个替换。
+
+```java
+public class Solution {
+    public String replaceBlankOne(String str){
+        String res = str.replaceAll(" ", "%20");
+        return res;
+    }
+
+    /**
+    * 要比正则表达式快
+    */
+    public String replaceBlankTwo(String str){
+        if(str == null){
+            return "";
+        }
+        int count = 0;
+        for (int i = 0; i < str.length(); i++) {
+            if(str.charAt(i) == ' '){
+                count++;
+            }
+        }
+        if(count == 0) return str;
+        char[] chars = new char[str.length() + count * 2];
+        count = 0;
+        for (int i = 0; i < str.length(); i++) {
+            if(str.charAt(i) == ' '){
+                chars[count++] = '%';
+                chars[count++] = '2';
+                chars[count++] = '0';
+            }else {
+                chars[count++] = str.charAt(i);
+            }
+        }
+        return new String(chars);
+    }
+}
+```
+
+
+
+## 链表
+
+### 从尾到头打印链表-P58
+
+#### 方法一
+
+利用栈实现
+
+````java
+public class Solution {
+    public void printListReversinly(ListNode listNode){
+        if (listNode == null) {
+            return;
+        }
+        Deque<Integer> deque = new LinkedList<>();
+        while (listNode != null) {
+            deque.push(listNode.value);
+            listNode = listNode.next;
+        }
+        deque.forEach(System.out::println);
+    }
+}
+````
+
+#### 方法二
+
+递归本质上就是一个栈，要实现反向，我们没访问一个节点时，先递归输出他后面的节点在输出节点自身。注意：如果链表过长，则可能导致栈溢出。
+
+````java
+public class Solution {
+    public void printListReversinly(ListNode listNode){
+        if (listNode != null) {
+            if (listNode.next != null) { // 先输出后面的节点
+                printListReversinlyTwo(listNode.next);
+            }
+            System.out.println(listNode.value); // 再输出自己
+        }
+    }
+}
+````
+
+
+
+## 树
+
+### 构建二叉树-P62
+
+```txt
+根据一个二叉树的前序遍历和中序遍历构建出这个二叉树。
+例如前序：1,2,4,7,3,5,6,8   中序：4,7,2,1,5,3,8,6 对应的二叉树为：
+     1
+  2      3
+4      5     6
+  7        8
+  
+由于前序1为树的跟节点。此时看中序，1左边的4,7,2则为根1的左子树，1右边的5,3,8,6则为根1的右子树。此时看前序，1右边的2,4,7为根1的左子树，后边剩余的为右子树。此时递归即可构建出二叉树。
+```
+
+````java
+public class Solution {
+    /**
+     * @param preOrder 前序序列
+     * @param midOrder 中序序列
+     * @return 返回构建好的二叉树
+     */
+    public BinaryTreeNode binaryTreeConstructor(int[] preOrder, int[] midOrder) {
+        if (preOrder == null || midOrder == null || preOrder.length != midOrder.length || preOrder.length == 0 || midOrder.length == 0) {
+            return null;
+        }
+        return binaryTreeConstruct(preOrder, 0, preOrder.length - 1, midOrder, 0, midOrder.length - 1);
+    }
+
+    /**
+     * @param preOrder 前序序列
+     * @param preStart 当前树前序开始
+     * @param preEnd   当前树前序结束
+     * @param midOrder 中序序列
+     * @param midStart 当前树中序开始
+     * @param midEnd   当前树中序结束
+     * @return 返回构建好的二叉树
+     */
+    private BinaryTreeNode binaryTreeConstruct(int[] preOrder, int preStart, int preEnd, int[] midOrder, int midStart, int midEnd) {
+        BinaryTreeNode root = new BinaryTreeNode(preOrder[preStart]);
+        // 只有一个节点
+        if (preStart == preEnd) {
+            if (midStart == midEnd && preOrder[preStart] == midOrder[midStart]) {
+                return root;
+            } else {
+                throw new RuntimeException("Invalid input");
+            }
+        }
+
+        // 在中序序列中找到根节点
+        int midRoot = midStart;
+        while (midRoot <= midEnd && midOrder[midRoot] != preOrder[preStart]) {
+            midRoot++;
+        }
+
+        // 没有在中序序列中找到与根节点值相等的节点
+        if (midRoot == midEnd && midOrder[midRoot] != preOrder[preStart]) {
+            throw new RuntimeException("Invalid input");
+        }
+        // 左子树的节点数量
+        int leftLength = midRoot - midStart;
+        int leftPreEnd = preStart  + leftLength;
+        if (leftLength > 0) {
+            // 构建左子树
+            root.left = binaryTreeConstruct(preOrder, preStart + 1, leftPreEnd, midOrder, midStart, midRoot - 1);
+        }
+        if (leftLength < preEnd - preStart) {
+            // 构建右子树
+            root.right = binaryTreeConstruct(preOrder, leftPreEnd + 1, preEnd, midOrder, midRoot + 1, midEnd);
+        }
+        return root;
+    }
+}
+````
+
+### 二叉树的下一个节点-P65
+
+
+
+## 栈和队列
+
+### 用两个栈实现队列-P68
+
+````java
+public class Solution {
+    private Queue<Integer> stack1;
+    private Queue<Integer> stack2;
+
+    public Solution() {
+        stack1 = new LinkedList<>();
+        stack2 = new LinkedList<>();
+    }
+
+    public void add(int i) {
+        stack1.add(i);
+    }
+
+    public int remove() {
+        if (!stack2.isEmpty()) {
+            return stack2.poll();
+        }
+        while (!stack1.isEmpty()) {
+            stack2.add(stack1.poll());
+        }
+        return stack2.poll();
+    }
+}
+````
+
+### 两个队列实现一个栈-P71
+
+````txt
+类似
+````
+
+
+
+# 算法和数据操作
+
+## 循环和递归
+
+### 斐波那契数列-P74
+
+````java
+public class Solution {
+    // 递归，效率低且可能造成栈溢出
+    public long fibonacciOne(int n){
+        if(n <=0) {
+            return 0L;
+        }
+        if(n==1){
+            return 1L;
+        }
+        return fibonacciOne(n - 1)+fibonacciOne(n-2);
+    }
+    // 循环，效率高
+    public long fibonacciTwo(int n){
+        if(n <=0) {
+            return 0L;
+        }
+        if(n==1){
+            return 1L;
+        }
+        long a = 0;
+        long b = 1;
+        long temp;
+        for(int i = 1;i<=n;i++){
+            temp = a+b;
+            a = b;
+            b = temp;
+        }
+        return a;
+    }
+}
+````
+
+### 青蛙跳台阶-P77
+
+青蛙跳台阶，每次可以跳一步或者两步，问跳到n阶一共有多少种跳发。
+
+前面n-2阶已经跳完，最后一步有两种跳法，则f(n) = f(n - 1) + f(n - 2)，即为斐波那契数列问题。
+
+## 查找和排序
+
+### 快速排序-P79
+
+````java
+public void quickSort(int[] array, int left, int right) {
+        if (left > right) {
+            return;
+        }
+        int base = array[left];
+        int i = left;
+        int j = right;
+        while (i < j) {
+            while (array[j] >= base && i < j) {
+                j--;
+            }
+            while (array[i] <= base && i < j) {
+                i++;
+            }
+            if (i < j) {
+                int temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+        }
+        array[left] = array[i];
+        array[i] = base;
+        quickSort(array, left, i - 1);
+        quickSort(array, i + 1, right);
+
+    }
+````
+
+### 旋转数组的最小数字-P82
+
+```txt
+把一个有序的数字的若干个元素搬到数组的末尾，称为数组的旋转。例如{3,4,5,1,2}为{1,2,3,4,5}的一个旋转。输出旋转数组的最小元素。
+```
+
+````txt
+采用双指针法，第一个指针指向数组最左边，第二个指向数组最右边。然后取两个指针中间的元素。若该元素的值大于左指针所指向的值，则将左指针指向中间的元素；若中间的元素小于右指针的值所指向的值，则将右指针指向中间的元素。最后两指针将相邻，且右指针所指向的值为数组最小值。
+    
+````
+
+````java
+public int findMin(int[] array) {
+        int left = 0;
+        int right = array.length - 1;
+        while (left < right) {
+            int mid = (right + left) / 2;
+            if (array[mid] > array[left]) {
+                left = mid;
+            } else {
+                right = mid;
+            }
+            if (right - 1 == left) {
+                break;
+            }
+        }
+        return array[right];
+    }
+````
+
+``` txt
+注意：上述代码并不能解决所有的问题，特例{0,1,2,3,4,5}也是一个特殊的旋转数组。还有，对于{1,0,1,1,1,1}或者{1,1,1,0,1}这种特殊的旋转数组，上述代码也无能为力。
+```
+
+##### 改进
+
+````java
+public int findMin(int[] array) {
+        int left = 0;
+        int right = array.length - 1;
+        while (left < right) {
+            if (array[left] < array[right]) { //解决特例{0,1,2,3,4,5}
+                return array[left];
+            }
+            int mid = (right + left) / 2;
+            if (array[mid] > array[left]) {
+                left = mid;
+            } else if(array[mid] < array[right]) {
+                right = mid;
+            }else {// 解决特例 {1,0,1,1,1,1}或者{1,1,1,0,1}
+                left++;
+            }
+            if (right - 1 == left) { // 解决特例 {1,0,1,1,1,1}或者{1,1,1,0,1}
+                break;
+            }
+        }
+        return array[right];
+    }
+````
+
+## 回溯法
+
+### 矩阵中的路径-P89
+
+````txt
+求一个矩阵中是否存在一条包含某字符串所有字符的路径，矩阵上每个位置只能用一次，路径可以重任意位置开始，每次可以向上、左、下、右中选择移动一格。遍历过程如图。
+````
+
+![2021031610340834325](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/2021031610340834325.jpg)
+
+````java
+public class Solution {
+    public boolean hasPath(char[] matrix, int rows, int cols, char[] str) {
+        if (matrix == null || matrix.length == 0 || str == null || str.length == 0 || matrix.length != rows * cols) {
+            return false;
+        }
+        // 标志位，判断这一步有没有走过
+        boolean[] flags = new boolean[matrix.length];
+        for (int i = 0; i < rows; i++) { // 从任意位置开始
+            for (int j = 0; j < cols; j++) {
+                // 循环遍历二维数组，找到起点等于str第一个元素的值，再递归判断四周是否有符合条件的----回溯法
+                if (hasPath(matrix, i, j, rows, cols, flags, str, 0)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean hasPath(char[] matrix, int i, int j, int rows, int cols, boolean[] flags, char[] str, int k) {
+        // 先根据i和j计算匹配的第一个元素转为一维数组的位置
+        int index = i * cols + j;
+        // 递归终止条件
+        if (i < 0 || j < 0 || i >= rows || j >= cols || matrix[index] != str[k] || flags[index] == true) {
+            return false;
+        }
+
+        // 若k已经到达str末尾了，说明之前的都已经匹配成功了，直接返回true即可
+        if (k == str.length - 1) {
+            return true;
+        }
+
+        // 标识这一步已经走过
+        flags[index] = true;
+        
+        // 回溯，递归寻找，每次找到了就给k加一，找不到，还原
+        if (hasPath(matrix, i - 1, j, rows, cols, flags, str, k + 1) ||
+                hasPath(matrix, i + 1, j, rows, cols, flags, str, k + 1) ||
+                hasPath(matrix, i, j - 1, rows, cols, flags, str, k + 1) ||
+                hasPath(matrix, i, j + 1, rows, cols, flags, str, k + 1)) {
+            return true;
+        }
+        // 走到这，说明这一条路不通，还原，再试其他的路径
+        flags[index] = false;
+        return false;
+    }
+}
+````
+
+### 机器人运动范围-P92
+
+```txt
+地上有m行n列的方格，机器人从（0,0）开始移动，可向四个方向移动一格，但是不能进行坐标和列坐标大于k的格子。
+例k=18，能进入（35,37），因为3+5+7+3=19，但是不能进入（35,38）。
+```
+
+类似上述例子
+
+````java
+public class Solution {
+    public int movingCount(int threshold, int rows, int cols) {
+        if (threshold < 0 || rows < 0 || cols < 0) {
+            return 0;
+        }
+
+        boolean[] flags = new boolean[rows * cols]; // 标记该位置有没有走过
+        return movingCount(threshold, rows, cols, 0, 0, flags);
+    }
+
+    private int movingCount(int threshold, int rows, int cols, int i, int j, boolean[] flags) {
+        // 递归出口
+        if (i < 0 || j < 0 || i >= rows || j >= cols || flags[i * cols + j] || (cal(i) + cal(j)) > threshold) {
+            return 0;
+        }
+        // 标记当前位置已走过
+        flags[i * cols + j] = true;
+       // 回溯
+        return 1 + movingCount(threshold, rows, cols, i + 1, j, flags)
+                + movingCount(threshold, rows, cols, i - 1, j, flags)
+                + movingCount(threshold, rows, cols, i, j + 1, flags)
+                + movingCount(threshold, rows, cols, i, j - 1, flags);
+    }
+
+    private int cal(int i) {
+        int res = 0;
+        while (i > 0) {
+            res += i % 10;
+            i /= 10;
+        }
+        return res;
+    }
+}
+
+````
+
+## 动态规划和贪心算法
+
+### 剪绳子
+
+```txt
+有一根长度为n的绳子，将它剪开为m段，每段长度为k[i],求这些剪开后的绳子的最大乘积。时间O(n^2)，空间O(n)
+```
+
+#### 方法一 动态规划-P96
+
+````java
+public class Solution {
+    public int maxProductAfterCuttingOne(int len){
+        if(len < 2){
+            return 0;
+        }
+        if(len == 2){
+            return 1;
+        }
+        if(len == 3){
+            return 2;
+        }
+        int max = 0;
+        int[] dp = new int[len + 1];
+        dp[0] = 0;
+        dp[1] = 1;
+        dp[2] = 2;
+        dp[3] = 3;
+
+        for (int i = 4; i <= len; i++) {
+            max = 0;
+            for (int j = 1; j <= i / 2 ; j++) {
+                int temp = dp[j] * dp[i - j];
+                if (max < temp) {
+                    max = temp;
+                }
+            }
+            dp[i] = max;
+        }
+        return dp[len];
+    }
+}
+````
+
+#### 方法二 贪心算法-P97
+
+````txt
+当 n >= 5时，尽可能剪下长度为3的绳子。当剩下的绳子长度为4时，对半剪。时间、空间O(1)
+````
+
+````java 
+public int maxProductAfterCuttingTwo(int len) {
+        if (len < 2) {
+            return 0;
+        }
+        if (len == 2) {
+            return 1;
+        }
+        if (len == 3) {
+            return 2;
+        }
+        int timesOf3 = len / 3;  // 剪3的次数
+        if (len - timesOf3 * 3 == 1) { //长度为4是，应该剪为2*2
+            timesOf3 -= 1;
+        }
+        int timesOf2 = (len - timesOf3 * 3) / 2;
+        return (int) (Math.pow(3, timesOf3) * Math.pow(2, timesOf2));
+    }
+````
+
+## 位运算
+
+### 二进制中1的个数-P101
+
+#### 常规解法
+
+````java
+public class Solution {
+    public int  numberOfOne(int n){
+        int res = 0;
+        while(n!=0){
+            if((n & 1) == 1){// 支持负数
+                res++;
+            }
+            n = n >>> 1; // 无符号右移
+        }
+        return res;
+    }
+
+    // 或者将1左移
+    
+}
+````
+
+#### 惊喜解法
+
+````java
+public int numberOfOne(int n) {
+        int res = 0;
+        while(n ！= 0){ // 支持负数
+            res++;
+            n = (n-1) & n; // 减1后再 & 自身则会把 n 最右边的 1 变为 0
+        }
+        return res;
+    }
+````
+
+
+
+
+
+# 高质量的代码
+
+## 代码的规范性
+
+```txt
+代码规范的命名、书写、布局
+```
+
+
+
+## 代码的完整性
+
+### 数值的整数次方-P110
+
+```` txt
+实现double pow(double base, int exponent)，无需考虑大数问题。
+````
+
+```java
+public static double pow(double base, int exponent) {
+        if(base == 0){ // 当底数为0
+            return 0;
+        }
+        if (exponent == 0){ // 当指数为0
+            return 1;
+        }
+        double res = base;
+        boolean flag = false;
+        if (exponent < 0) { // 当指数为负数
+            exponent = -exponent;
+            flag = true;
+        }
+        for (int i = 1; i < exponent; i++) {
+            res *= base;
+        }
+        if (flag) {
+            res = 1 / res;
+        }
+        return res;
+    }
+```
+
+### 打印1到最大的n位数-P114
+
+```txt
+改题目需要考虑大数问题，利用数组，或字符串解决。
+```
+
+##### 方法一 数组
+
+```java
+public class Solution {
+    public boolean Increment(int[] number){                 //  这个方法是用来实现对数加1操作
+        boolean isOverflow = false; // 是否溢出
+        int nTakeOver=0; // 是否进位
+        for(int i=number.length-1;i>=0;i--){
+            int nSum = number[i]+nTakeOver;
+            if(i==number.length-1)
+                nSum++;
+            if(nSum>=10){ 
+                if(i==0) 
+                    isOverflow=true;
+                else{
+                    nTakeOver=1;
+                    nSum=nSum-10;
+                    number[i]=nSum;
+                }
+            }
+            else{
+                number[i]=nSum;
+                break;
+            }
+        }
+        return isOverflow;
+    }
+
+    public void PrintNumber(int[] number){   //该方法是负责打印一个正类，千万不要尝试将数组变成一个整数
+        boolean isBeginning=true;
+        for(int i=0;i<number.length;i++){
+            if(isBeginning&&number[i]!=0)
+                isBeginning=false;
+            if(!isBeginning){
+                System.out.print(number[i]);
+            }
+        }
+    }
+
+    public void Test(int n){     //打印从1到最大的n位整数
+        if(n<=0)
+            System.out.println("输入出错，请重新输入！");
+        int[] number = new int[n];
+
+        while(!Increment(number)){
+            PrintNumber(number);
+            //System.out.println();
+        }
+    }
+}
+```
+
+##### 方法二 递归全排列
+
+````java
+public class Solution {
+    private void PrintMaxOfNdigits(int[] number,int length,int index){
+        if(index ==length-1){
+            PrintNumber(number);
+            return;
+        }
+        for(int i=0;i<10;i++){ //第index+1层
+            number[index+1]=i;
+            PrintMaxOfNdigits(number, length, index+1);
+        }
+    }
+    private void PrintNumber(int[] number){   //该方法是负责打印一个正类，千万不要尝试将数组变成一个整数
+        boolean isBeginning=true;
+        for(int i=0;i<number.length;i++){
+            if(isBeginning&&number[i]!=0)
+                isBeginning=false;
+            if(!isBeginning){
+                System.out.print(number[i]);
+            }
+        }
+        System.out.println();
+    }
+
+    public void prinNumber(int n){
+        if(n<=0)
+            return;
+        int[] number = new int[n];
+        for(int i=0;i<10;i++){ // 第0层
+            number[0]=i;
+            PrintMaxOfNdigits(number, n, 0);
+        }
+    }
+}
+````
+
+### 删除链表的节点-P119
+
+一个单链表，给出头结点和要删除的节点指针，O（1）时间删除该节点。
+
+````java
+class ListNode{
+    int value;
+    ListNode next;
+}
+
+public class Solution {
+    public boolean deleteNode(ListNode head, ListNode toBeDeleted){
+        if(head == null || toBeDeleted==null){
+            return false;
+        }
+        // 要删除的节点不是尾节点
+        if (toBeDeleted.next != null) {
+            ListNode next = toBeDeleted.next;
+            // 将要删除的节点的下一个节点的值覆盖要删除的节点的值。
+            toBeDeleted.value = next.value;
+            toBeDeleted.next = next.next;
+        }//又是尾节点又是头节点
+        else if (head == toBeDeleted){
+            head = null;
+        }
+        //是尾节点但不是头节点
+        else{
+            ListNode node = head;
+            while(node.next != toBeDeleted){
+                node = node.next;
+            }
+            node.next = null;
+        }
+    }
+}
+````
+
+
+
+### 删除链表中重复的节点-P122
+
+```java
+public class Solution {
+    public void deleteDuplication(ListNode head){
+        if(head == null ){
+            return;
+        }
+        ListNode preNode = null;
+        ListNode curNode = head;
+        while (curNode != null) {
+            ListNode nextNode = curNode.next;
+            boolean needDeleted = false;
+            if (nextNode != null && nextNode.value == curNode.value) {  // 需要删除
+                needDeleted = true;
+            }
+            if (!needDeleted) { // 不需要删除，都往后移
+                preNode = curNode;
+                curNode =  curNode.next;
+            }else {
+                ListNode toBeDeleted = curNode;
+                int value = curNode.value;
+                while (toBeDeleted != null && toBeDeleted.value == value){ // 循环删除
+                    nextNode = toBeDeleted.next;
+                    toBeDeleted = nextNode;
+                }
+                if (preNode == null) { // 将断的链表连起来
+                    head = nextNode;
+                }else {
+                    preNode.next = nextNode;
+                }
+                curNode = nextNode; // 更新curNode
+            }
+        }
+    }
+}
+```
+
+### 正则表达式匹配-P125
+
+```txt
+实现一个函数来匹配包含 . 和 * 的正则表达式。匹配是指所有的字符匹配整个模式。例如 aaa 匹配模式 a.a ，ab*ac*a，但与 aa.a, ab*a不匹配。
+```
+
+```java
+递归算法逻辑关系分析：
+一、如果模式串存在下一个字符，且下个字符是∗
+1.如果字符串当前字符和模式串当前字符匹配：
+1⃣️ 认为∗前面的字符出现0次，i不变,j+2
+2⃣️ 认为∗前面的字符出现1次，i+1，j+1
+3⃣️ 认为∗前面的字符出现多次，i+1，j不变
+2.如果字符串当前字符和模式串当前字符不匹配
+1⃣️ 认为∗前面的字符出现0次，i不变，j+2
+    
+二、如果下个字符不是∗：
+1.如果字符串当前字符和模式串当前字符匹配
+1⃣️ 匹配下个字符，i+1，j+1
+2. 如果字符串当前字符和模式串当前字符不匹配
+1⃣️ 字符串和模式串不匹配
+
+public class Solution {
+    public boolean match(String str, String pattern) {
+        if (str == null || pattern == null){
+            //有一个是空串 返回false
+            return false;
+        }
+        
+        return matchCore(str.toCharArray(), 0, pattern.toCharArray(), 0);//递归地匹配
+    }
+
+    private boolean matchCore(char[] str, int strIndex, char[] pattern, int patternIndex) {
+        //如果匹配同时到达末尾，则匹配成功
+        if (strIndex == str.length && patternIndex == pattern.length) return true;
+        //如果模式串先到达末尾，则匹配不成功
+        if (strIndex != str.length && patternIndex == pattern.length) return false;
+        /*如果下一个字符是'*'*/
+        if (patternIndex + 1 < pattern.length && pattern[patternIndex + 1] == '*') {
+            //如果当前字符是匹配的
+            if (strIndex != str.length && (str[strIndex] == pattern[patternIndex] || pattern[patternIndex] == '.')){
+                return matchCore(str, strIndex, pattern, patternIndex + 2) || //认为'*'前的字符出现0次
+                        matchCore(str, strIndex + 1, pattern, patternIndex + 2) ||//认为'*'前的字符出现1次
+                        matchCore(str, strIndex + 1, pattern, patternIndex);//认为'*'前的字符出现多次
+            }
+            else{
+                //如果当前字符不匹配的 认为'*'前的字符出现0次
+                return matchCore(str, strIndex, pattern, patternIndex + 2);
+            }
+        }
+        /*如果下一个字符不是'*'*/
+        //当前字符是匹配的
+        if (strIndex != str.length && (str[strIndex] == pattern[patternIndex] || pattern[patternIndex] == '.')){
+
+            return matchCore(str, strIndex + 1, pattern, patternIndex + 1);
+        }
+        else{
+            //当前字符是不匹配的
+            return false;
+        }
+    }
+}
+```
+
+
+
+### 表示数值的字符串-P127
+
+
+
+### 调整数组顺序使得奇数位于偶数前面-P129
+
+```txt
+调整数组里数字的顺序，使得所有的奇数都位于数组的前半部分，所有的偶数位于数组的后半部分。
+```
+
+
+
+#### 初级解法-双指针
+
+```java
+public class Solution {
+    public void reorderOddEven(int[] array) {
+        if (array == null) {
+            return;
+        }
+        int i = 0;
+        int j = array.length - 1;
+        while (i < j) {
+            while (i < j && (array[i] & 0x1) == 1) { (1)
+                i++;
+            }
+            while (i < j && (array[j] & 0x1) == 0) { (2)
+                j--;
+            }
+            //此种写法可能会导致问题：如果 a 和 b 引用的是同一个变量的话，使用这种方法会使得这个变量变为0。	
+            //array[i] = array[i] ^ array[j]; 
+		   //array[j] = array[i] ^ array[j];
+		   //array[i] = array[i] ^ array[j];
+            int temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+    }
+}
+```
+
+
+
+#### 可扩展法-P132
+
+```txt
+将（1）和（2）的中的判断逻辑抽象出来，传入一个函数指针，可解决其他类型的问题。
+例如把数组中所有的负数都放到非负数前面，或者把所有能被3整除的放到不能被3整除的数后面。
+```
+
+## 代码的鲁棒性
+
+### 链表中倒数第k个节点-P135
+
+````txt
+输入一个链表，输出该链表中倒数第k个节点。如有链表1,2,3,4,5,6 则倒数第3个节点是4.
+````
+
+````java
+// 双指针法
+public ListNode findKthToTail(ListNode head, int k) {
+        if(head == null || k < 1){
+            return null;
+        }
+        int step = k - 1;
+        ListNode post =head;
+        while(step > 0){
+            post = post.next;
+            if(post == null){ // 链表长度小于k
+                return null;
+            }
+            step--;
+        }
+        ListNode pre = head;
+        while(post.next != null){
+            pre = pre.next;
+            post = post.next;
+        }
+        return pre;
+    }
+````
+
+### 链表的中间节点
+
+````txt
+快慢指针，两个链表同时从head往右走，一个一次走一步，一个走两步，则一个到达链表尾部时，另一个在链表中间。
+````
+
+### 链表中环的入口节点-P139
+
+```java
+/**
+ * 第一步：判断链表中是否有环。
+ *   设置连个指针同时指向头节点，一个指针每次走两步，一个指针每次走一步，如果存在环，则两个指针一定可以相遇，相遇的节点一定是*   *  环内的某一点。
+ * 第二部：确定环中节点数目。
+ *   从第一步中可以得到环中的一个节点，设置一个指针指向这个节点，遍历环一次，统计出有多少个节点。
+ * 第三步：找出环的入口。
+ *   因为环的长度已知了（设为k），那么就是知道了入口所在的位置（倒数的位置），可以参考上一题的思想链表中倒数第k个节点，
+ *   设置两个指针指向头结点，先让一个指针走k步，然后两个指针一起走。与上一题不同之处在于，
+ *   我们不需要判断是否到达了链表尾部，只需考虑两个指针是否指向了同一个对象即可。
+ */
+class ListNode {
+    int val;
+    ListNode next = null;
+    ListNode(int val) {
+        this.val = val;
+    }
+}
+
+public class Solution {
+
+    public ListNode EntryNodeOfLoop(ListNode pHead)
+    {
+        ListNode aNodeInLoop = IsLoop(pHead);
+        int numInLoop = 0;
+        if(aNodeInLoop == null) {
+            return null;
+        }
+        else {
+            numInLoop = NumNodeInLoop(aNodeInLoop);
+        }
+        ListNode first = pHead;
+        ListNode second = pHead;
+        while(numInLoop > 0) {
+            first = first.next;
+            numInLoop--;
+        }
+        while(first != second){
+            first = first.next;
+            second = second.next;
+        }
+        return first;
+
+    }
+    //判断是否有环，如果有，返回两个指针相遇的节点，否则返回null
+    private ListNode IsLoop(ListNode pHead) {
+        if(pHead == null) {
+            return null;
+        }
+        ListNode slow = pHead.next;
+        if(slow == null) {
+            return null;
+        }
+        ListNode fast = pHead.next.next;
+        if(fast == null) {
+            return null;
+        }
+        while(slow != null && fast != null) {
+            if(slow == fast) {
+                return slow;
+            }
+            slow = slow.next;
+            fast = fast.next;
+            if(fast != null) {
+                fast = fast.next;
+            }
+        }
+        return null;
+    }
+
+    //环中的节点数目
+    private int NumNodeInLoop(ListNode pHead) {
+        ListNode temp = pHead.next;
+        int res = 1;
+        while(temp != pHead) {
+            temp = temp.next;
+            res++;
+        }
+        return res;
+    }
+}
+```
+
+### 反转链表-P142
+
+```txt
+给一个链表head，输出该链表反转后的head。
+```
+
+![image-20210321115112274](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/image-20210321115112274.png)
+
+```txt
+每次反转需要3个指针，如上图所示。当要反转的节点为i时，需要知道i的前一个节点（i需要指向前一个节点）和i后一个节点（避免链表断裂）
+```
+
+```java
+public ListNode reverseList(ListNode head){
+        if(head == null){
+            return null;
+        }
+        // 只有一个节点
+        if(head.next==null){
+            return head;
+        }
+        ListNode pre = head;
+        ListNode cur = head.next;
+        ListNode post = cur.next;
+        // 第一个节点的next为null
+        pre.next = null;
+        // 只有两个节点
+        if (post == null) {
+            cur.next = pre;
+            return cur;
+        }
+        while (post != null){
+            cur.next = pre;
+            pre = cur;
+            cur = post;
+            post = post.next;
+        }
+        cur.next = pre;
+        return cur;
+    }
+```
+
+### 合并两个排序的链表-P145
+
+```txt
+和并两个递增的链表，合并后的新链表任然是递增的，返回新链表的头指针。
+```
+
+```java
+public ListNode mergeOrderedLists(ListNode head1, ListNode head2) {
+        if (head1 == null && head2 != null) {
+            return head2;
+        } else if (head1 != null && head2 == null) {
+            return head1;
+        } else if (head1 == null && head2 == null) {
+            return null;
+        }
+
+        ListNode phead1 = head1;
+        ListNode phead2 = head2;
+        ListNode cur = null;
+        ListNode head = null;
+        // 初始化第一个节点
+        if (phead1.val <= phead2.val) {
+            cur = phead1;
+            phead1 = phead1.next;
+        } else {
+            cur = phead2;
+            phead2 = phead2.next;
+        }
+        head = cur;
+        // 合并链表
+        while (phead1 != null && phead2 != null) {
+            if (phead1.val <= phead2.val) {
+                cur.next = phead1;
+                phead1 = phead1.next;
+            } else {
+                cur.next = phead2;
+                phead2 = phead2.next;
+            }
+            cur = cur.next;
+        }
+        // 合并剩下的链表
+        ListNode p = (phead1 == null) ? phead2 : phead1;
+        while (p != null) {
+            cur.next = p;
+            cur = cur.next;
+            p = p.next;
+        }
+        return head;
+
+    }
+```
+
+### 树的子结构-P148
+
+```txt
+输入两棵二叉树A，B，判断B是不是A的子结构。
+```
+
+```java
+public class Solution {
+    // 第一步在treeNode1中找与treeNode2根节点值一样的节点
+    public boolean hasSubTree(TreeNode treeNode1, TreeNode treeNode2) {
+        boolean res = false;
+        if (treeNode1 != null && treeNode2 != null) { //递归终止条件
+            if (Double.compare(treeNode1.val, treeNode2.val) == 0) {
+                res = tree1HasTree2(treeNode1, treeNode2); // 本层
+            }
+            // 下层
+            if (!res) {
+                res = hasSubTree(treeNode1.left, treeNode2);
+            }
+            if (!res) {
+                res = hasSubTree(treeNode1.rigth, treeNode2);
+            }
+        }
+        return res;
+    }
+
+    // 第二步判断treeNode1中以R为根节点的子树是否与treeNode2有相同的结构
+    private boolean tree1HasTree2(TreeNode treeNode1, TreeNode treeNode2) {
+        // 递归终止条件
+        if (treeNode2 == null) {
+            return true;
+        }
+        if (treeNode1 == null) {
+            return false;
+        }
+        //本层
+        if (Double.compare(treeNode1.val, treeNode2.val) != 0) {
+            return false;
+        }
+        // 下层
+        return tree1HasTree2(treeNode1.left, treeNode2.left) &&
+                tree1HasTree2(treeNode1.rigth, treeNode2.rigth);
+    }
+}
+```
+
+# 解决面试题的思路
+
+## 画图让抽象的问题形象化
+
+### 二叉树的镜像-P157
+
+![image-20210323090803466](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/image-20210323090803466.png)
+
+```java
+public void mirrorRecursively(TreeNode head) {
+        // 递归结束条件
+        if (head == null) {
+            return;
+        }
+        if (head.left == null && head.rigth == null) {
+            return;
+        }
+        // 本层
+        TreeNode temp = head.left;
+        head.left = head.rigth;
+        head.rigth = temp;
+        // 下层
+        if (head.left != null) {
+            mirrorRecursively(head.left);
+        }
+        if (head.rigth != null) {
+            mirrorRecursively(head.rigth);
+        }
+
+    }
+```
+
+### 对称的二叉树-P159
+
+```
+通过定义一种遍历方法（根、右、左）发现遍历出来的序列和前序遍历序列一直，则这棵二叉树就是对称的二叉树。
+如第一棵树前序：8,6,5,7,6,7,5  对称前序遍历为: 8,6,5,7,6,7,5。 一致则为对称二叉树。对于第三棵树，考虑null即可。
+```
+
+![image-20210323093326776](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/image-20210323093326776.png)
+
+```java
+public class Solution {
+    public boolean isSymmetrical(TreeNode head){
+        return isSymmetrical(head, head);
+    }
+    private boolean isSymmetrical(TreeNode head1, TreeNode head2){
+        // 递归结束
+        if (head1 == null && head2 == null) {
+            return true;
+        }
+        if (head1 == null || head2 == null) {
+            return false;
+        }
+        // 本层
+        if (head1.val != head2.val) {
+            return false;
+        }
+        // 下层
+        return isSymmetrical(head1.left, head2.rigth) &&
+                isSymmetrical(head1.rigth, head2.left);
+    }
+}
+```
+
+### 顺时针打印矩阵-P161
+
+```
+输入一个矩阵，从外到内顺时针打印矩阵。如
+1  2  3  4
+5  6  7  8
+9  10 11 12
+13 14 15 16， 打印顺序为1,2,3,4,8,12,16,15,14,13,9,5,6,7,11,10。
+```
+
+```java
+public class Solution {
+    public void printMatrixClockwisely(int[][] array) {
+        if (array == null || array.length == 0 || (array.length == 1 && array[0].length == 0)) {
+            return;
+        }
+        int rows = array.length;
+        int cols = array[0].length;
+        int start = 0;
+        while (cols > start * 2 && rows > start * 2) {  // 终止条件
+            printMatrixClockwisely(array, start, rows, cols);
+            start++;
+        }
+    }
+
+    private void printMatrixClockwisely(int[][] array, int start, int rows, int cols) {
+        int endX = cols - 1 - start;
+        int endY = rows - 1 - start;
+        // 从左到右打印一行
+        for (int i = start; i <= endX; i++) {
+            System.out.print(array[start][i]+" ");
+        }
+        // 从上到下打印一行
+        // 终止行大于起始行
+        if(endY > start) {
+            for (int i = start+1; i <= endY; i++) {
+                System.out.print(array[i][endX]+" ");
+            }
+        }
+        // 从右到左打印一行
+        // 终止行大于起始行 && 终止列大于起始列
+        if (endY > start && endX > start) {
+            for (int i = endX-1; i >= start; i--) {
+                System.out.print(array[endY][i]+" ");
+            }
+        }
+        // 从下到上打印一行
+        // 终止行大于起始行+1(至少三行) && 终止列大于起始列
+        if (endY > start + 1 && endX > start) {
+            for (int i = endY - 1; i >= start+1 ; i--) {
+                System.out.print(array[i][start]+" ");
+            }
+        }
+    }
+} 
+```
+
+## 举例让抽象问题具体化
+
+### 包含min函数的栈-P165
+
+```
+定义栈数据结构，支持min、push、pop函数，且时间复杂度都是o(1)。
+该题仅仅用一个变量记录最小值解决不了问题，因为如果将最小值pop后，将无法得到次最小值，所以此题应该建立一个辅助栈。
+
+tips：当题目有时间复杂度要求且常规方法的不到解时，我们可以从增加空间复杂度的思路去思考如何解决问题。
+
+```
+
+```java
+class MyStack{
+    private Deque<Integer> stack;
+    private Deque<Integer> minStack;
+    public MyStack(){
+        stack = new LinkedList<>();
+        minStack = new LinkedList<>();
+    }
+
+    public int min(){
+        if(minStack.isEmpty()){
+            System.out.println("stack is empty!");
+            return Integer.MIN_VALUE;
+        }else {
+            return minStack.peek();
+        }
+    }
+
+    public void push(int i){
+        stack.push(i);
+        if(minStack.isEmpty()){
+            minStack.push(i);
+            return;
+        }
+        if(i < minStack.peek()){
+            minStack.push(i);
+        }else {
+            minStack.push(minStack.peek());
+        }
+    }
+    public int pop(){
+        minStack.pop();
+        return stack.pop();
+    }
+}
+```
+
+### 栈的压入、弹出序列-P168
+
+```txt
+输入两个整数序列，第一个表示栈的压入序列，第二个表示栈的弹出序列。判断第二个是否为该栈的弹出序列。假设压入栈的所有数字均不相等。例如，压栈序列1,2,3,4,5  则序列4,5,3,2,1是该栈的一个出栈序列，而4,3,5,1,2就不是该栈的弹出序列。
+```
+
+```java
+public class Solution {
+    public boolean isPopOrder(int[] pushArrays, int[] popArrays){
+        if(pushArrays == null || popArrays==null || (pushArrays.length != popArrays.length)){
+            return false;
+        }
+        Deque<Integer> stack = new LinkedList<>();
+        int j = 0;
+        for (int i = 0; i < pushArrays.length; i++) {
+            if(stack.isEmpty()){
+                stack.push(pushArrays[i]);
+            }else {
+                while (!stack.isEmpty() && j < popArrays.length && stack.peek()==popArrays[j]){
+                    stack.pop();
+                    j++;
+                }
+                if (!stack.isEmpty() && j < popArrays.length && stack.peek()!=popArrays[j]){
+                    stack.push(pushArrays[i]);
+                    continue;
+                }
+                if (!stack.isEmpty() && j >= popArrays.length) {
+                    return false;
+                }
+            }
+        }
+        while (!stack.isEmpty() && j < popArrays.length && stack.peek()==popArrays[j]){
+            stack.pop();
+            j++;
+        }
+        if(stack.isEmpty() && j == popArrays.length){
+            return true;
+        }else {
+            return false;
+        }
+    }
+}
+```
+
+
+
+### 从上到下打印二叉树-P171
+
+```txt
+宽序遍历二叉树。如下图二叉树，遍历序列为8,6,10,5,7,9,11.
+```
+
+<img src="https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/image-20210324093856223.png" alt="image-20210324093856223" style="zoom:50%;" />
+
+```java
+// 我的实现 添加完再打印，递归 辣鸡
+public class Solution {
+
+    public void printTreeBFS(TreeNode head) {
+        if(head == null){
+            return;
+        }
+        Queue<Integer> queue = new LinkedList<>();
+        queue.offer(head.val); // 先放头结点
+        printTreeBFS(head, queue);
+        queue.forEach((s)->System.out.print(s+" "));
+
+    }
+    private void printTreeBFS(TreeNode head, Queue<Integer> queue) {
+        if(head == null){ // 递归结束条件
+            return;
+        }
+        // 本层
+        if(head.left != null){
+            queue.offer(head.left.val);
+        }
+        if(head.right != null){
+            queue.offer(head.right.val);
+        }
+        // 下层
+        printTreeBFS(head.left, queue);
+        printTreeBFS(head.right, queue);
+    }
+}
+
+// 别人的实现，边打印边添加到队列，循环 牛逼
+public void printTreeBFS(TreeNode head) {
+        if (head == null) {
+            return;
+        }
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(head);
+        while (!queue.isEmpty()) {
+            TreeNode poll = queue.poll();
+            if (poll.left != null) {
+                queue.offer(poll.left);
+            }
+            if (poll.right != null) {
+                queue.offer(poll.right);
+            }
+            System.out.print(poll.val+" ");
+        }
+}
+```
+
+### 分行从上到下打印二叉树-P175
+
+```java
+// 分行打印树的每一行
+public void printTreeBFS(TreeNode head) {
+    if (head == null) {
+        return;
+    }
+    int curNum = 1; // 记录本层要打印的数量
+    int nextNum = 0; // 记录下层要打印的数量
+    Queue<TreeNode> queue = new LinkedList<>();
+    queue.offer(head);
+    while (!queue.isEmpty()) {
+        TreeNode poll = queue.poll();
+        System.out.print(poll.val+" ");
+        curNum--;
+        if (poll.left != null) {
+            nextNum++;
+            queue.offer(poll.left);
+        }
+        if (poll.right != null) {
+            nextNum++;
+            queue.offer(poll.right);
+        }
+        if (curNum == 0) {
+            System.out.println();
+            curNum = nextNum;
+            nextNum = 0;
+        }
+    }
+}
+```
+
+### 之字型打印二叉树-P176
+
+<img src="C:\Users\Youens\AppData\Roaming\Typora\typora-user-images\image-20210324103955132.png" alt="image-20210324103955132" style="zoom:50%;" />
+
+```txt
+使用两个栈来保存节点，一个栈保存当前遍历的节点，另一个栈保存下层遍历的节点。
+规律：如果当前是奇数层（1,3）时，先保存左孩子，然后保存右孩子（栈遍历时会从右到左）；
+如果当前是偶数层（2,4）时，先保存右孩子，再保存左孩子（栈遍历会从左到右）。
+```
+
