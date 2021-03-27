@@ -1,23 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # 数据结构
 
 ## 数组
@@ -1651,11 +1631,133 @@ public void printTreeBFS(TreeNode head) {
 
 ### 之字型打印二叉树-P176
 
-<img src="C:\Users\Youens\AppData\Roaming\Typora\typora-user-images\image-20210324103955132.png" alt="image-20210324103955132" style="zoom:50%;" />
+<img src="https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210327111222.png" alt="image-20210324103955132" style="zoom:50%;" />
 
 ```txt
 使用两个栈来保存节点，一个栈保存当前遍历的节点，另一个栈保存下层遍历的节点。
 规律：如果当前是奇数层（1,3）时，先保存左孩子，然后保存右孩子（栈遍历时会从右到左）；
 如果当前是偶数层（2,4）时，先保存右孩子，再保存左孩子（栈遍历会从左到右）。
+```
+
+```java
+public class Solution {
+    public void printTreeInChineseZhi(TreeNode head) {
+        if (head == null) {
+            return;
+        }
+        Deque<TreeNode> stack1 = new LinkedList<>();
+        Deque<TreeNode> stack2 = new LinkedList<>();
+        stack1.offer(head);
+        while (!stack1.isEmpty() || !stack2.isEmpty()) {
+            while (!stack1.isEmpty()) {
+                TreeNode temp = stack1.pop();
+                if (temp.left != null) {
+                    stack2.push(temp.left);
+                }
+                if (temp.right != null) {
+                    stack2.push(temp.right);
+                }
+                System.out.print(temp.val + " ");
+            }
+            System.out.println();
+            while (!stack2.isEmpty()) {
+                TreeNode temp = stack2.pop();
+                if (temp.right != null) {
+                    stack1.push(temp.right);
+                }
+                if (temp.left != null) {
+                    stack1.push(temp.left);
+                }
+                System.out.print(temp.val + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+```
+
+### 二叉搜索树的后序遍历序列-P179
+
+```
+输入一个整数数组，任意两个元素都不一样。判断该数组是不是某个二叉搜索树的后续遍历序列结果。
+例如，输入{5,7,6,9,11,10,8}，返回true，它是下图的后序遍历序列；输入{7,4,6,5}，返回false。
+```
+
+<img src="https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210327111203.png" alt="image-20210327092343944" style="zoom:67%;" />
+
+```java
+public class Solution {
+    public boolean verifySequenceOfBST(int[] sequence) {
+        if (sequence == null || sequence.length == 0) {
+            return false;
+        }
+        return isBST(sequence, 0, sequence.length - 1);
+    }
+
+    private boolean isBST(int[] seq, int start, int end) {
+        if (start >= end) {
+            return true;
+        }
+        int val = seq[end];
+        int split = start;
+        for (; split < end && seq[split] < val; split++) ;
+        for (int i = split; i < end; i++) {
+            if (seq[i] < val) {
+                return false;
+            }
+        }
+        return isBST(seq, start, split - 1) &&
+                isBST(seq, split, end - 1);
+    }
+}
+```
+
+### 二叉树中和为某一值得路径-P182
+
+<img src="https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210327111203.png" alt="image-20210327110322493" style="zoom:50%;" />
+
+```
+输入一棵二叉树和一个值，打印出二叉树中节点值和为目标值得所有路径（从根节点一直到叶子节点构成一条路径）。
+```
+
+```java
+public class Solution {
+    public void findPath(TreeNode head, int value) {
+        if (head == null) {
+            return;
+        }
+        Deque<Integer> stack = new LinkedList<>();
+        findPath(head, value, stack, 0);
+    }
+
+    private void findPath(TreeNode head, int value, Deque<Integer> stack, int curSum) {
+        curSum += head.val;
+        stack.push(head.val);
+        // 找到一个路径
+        if (value == curSum && head.left==null && head.right==null) {
+            stack.forEach((s)-> System.out.print(s+" "));
+            System.out.println();
+        }
+        //下层
+        if (head.left != null) {
+            findPath(head.left,value,stack,curSum);
+        }
+        if (head.right != null) {
+            findPath(head.right,value,stack,curSum);
+        }
+        // 返回父节点前，在路径上删除当前节点
+        stack.pop();
+    }
+}
+```
+
+
+
+## 分解让复杂问题简单化
+
+### 复杂链表的复制-P187
+
+```
+实现函数ComplexListNode clone(ComplexListNode head),复制一个复杂链表。在复杂链表中，每个节点有next指针指向下一个节点，还有random指针随机指向一个节点或null。
 ```
 
