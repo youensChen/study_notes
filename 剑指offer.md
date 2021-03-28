@@ -1761,3 +1761,395 @@ public class Solution {
 实现函数ComplexListNode clone(ComplexListNode head),复制一个复杂链表。在复杂链表中，每个节点有next指针指向下一个节点，还有random指针随机指向一个节点或null。
 ```
 
+#### 普通人思路
+
+```
+先复制主干链表，再循环寻找random指针所指向的。时间复杂度O(n^2)
+```
+
+#### 进阶思路
+
+```
+在复制主干链表的每个节点S的同时，将（S，S'）存入哈希表。接下来再次遍历链表，可在O（1）的时间找到S的random指针指向的N,则找到对应的N'。时间O（n），空间O（n）,相当于时间换空间。
+```
+
+#### 终极思路
+
+```
+分成三步解决这个问题：
+	1、复制主干链表并将每个节点S对应的S’的插到S的后面。
+	2、遍历一次，连接random，对于S的random，S‘的random’为random.next。
+	3、拆分链表，在偶数位（0,2,4...）的即为原链表，在奇数位（1,3,5...）的为复制后的链表。
+时间O(n)，空间O(1)
+```
+
+![image-20210328085246609](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328085253.png)
+
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328085253.png)
+
+![image-20210328085308352](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328085308.png)
+
+```java
+class ComplexListNode {
+	public int m_nValue;
+	ComplexListNode m_pNext;
+	ComplexListNode m_pSibling;
+}
+
+class Solution{
+   
+    //第一步： 根据原始结点A在其后面创建A'。
+    private void cloneNodes(ComplexListNode pHead){
+        ComplexListNode pNode = pHead;
+        while(pNode != null){
+            //创建pCloned结点即A'结点使其指向原始链表中A结点的下一结点B,不过A'的m_pSibling设置为null
+            ComplexListNode pCloned = new ComplexListNode();
+            pCloned.m_nValue = pNode.m_nValue;
+            pCloned.m_pNext = pNode.m_pNext;
+            pCloned.m_pSibling = null;
+            //将A结点指向A’结点
+            pNode.m_pNext = pCloned;
+            //使pNode指向A的下一结点B并以此循环修改(此时中间已将克隆结点A‘插入了原始列表)
+            pNode = pCloned.m_pNext;
+        }
+    }
+
+    // 第二步：设置每个结点的m_pSibling(注：m_pSibling为空结点不做修改)
+    private void connectSiblingNodes(ComplexListNode pHead){
+        ComplexListNode pNode = pHead;
+        while(pNode!=null){
+            ComplexListNode pCloned = pNode.m_pNext;
+            if(pNode.m_pSibling!=null){
+                pCloned.m_pSibling = pNode.m_pSibling.m_pNext;
+            }
+            pNode = pCloned.m_pNext;
+        }
+    }
+
+    // 第三步：拆分链表
+    private ComplexListNode reconnectNodes(ComplexListNode pHead){
+        ComplexListNode pNode = pHead;
+        ComplexListNode pClonedHead = null;
+        ComplexListNode pClonedNode = null;
+        if(pNode!=null){
+            pClonedHead = pClonedNode = pNode.m_pNext;
+            pNode.m_pNext = pClonedNode.m_pNext;
+            pNode = pNode.m_pNext;
+        }
+        while(pNode!=null){
+            pClonedNode.m_pNext = pNode.m_pNext;
+            pClonedNode = pClonedNode.m_pNext;
+            pNode.m_pNext = pClonedNode.m_pNext;
+            pNode = pNode.m_pNext;
+        }
+        return pClonedHead;
+    }
+
+    //上面的三步合起来即为复杂链表的复制
+    public ComplexListNode clone(ComplexListNode pHead){
+        cloneNodes(pHead);
+        connectSiblingNodes(pHead);
+        return reconnectNodes(pHead);
+    }
+    
+}
+```
+
+
+
+### 二叉搜索树与双向链表-P191
+
+```
+输入一颗二叉搜索树，将该二叉搜索树转换成一个排序的双向链表。要求不能创建任何新的结点，只能调整树中结点指针的指向，比如输入下图中左边的二叉搜索树，则输出转换之后的排序双向链表。
+```
+
+![image-20210328095344485](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328095344.png)
+
+![image-20210328095417601](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328095417.png)
+
+```java
+public class Solution {
+    private TreeNode head = null; //定义链表当前结点
+    private TreeNode realHead = null; //定义链表头部的结点
+
+    //中序递归遍历修改链表指针即可实现
+    public TreeNode convert(TreeNode pRootOfTree) {
+        if (pRootOfTree == null) {
+            return null;
+        }
+        convert(pRootOfTree.left); //左
+
+        if (head == null) { //根
+            head = pRootOfTree;
+            realHead = pRootOfTree; // realHead指向最左
+        } else {
+            head.right = pRootOfTree; // 当前节点连在head的右边
+            pRootOfTree.left = head;
+            head = pRootOfTree; // 更新head
+        }
+
+        convert(pRootOfTree.right); //右
+        return realHead;
+    }
+}
+
+
+//思路二： 非递归借助栈实现
+public class Solution {
+    public TreeNode convert(TreeNode pRootOfTree){
+        if(pRootOfTree == null){
+            return null;
+        }
+        TreeNode list = null;
+        Stack<TreeNode> stack = new Stack<TreeNode>();
+        while(pRootOfTree != null || !stack.isEmpty()){
+            // 右 根 左
+            if(pRootOfTree != null){ // 右
+                stack.push(pRootOfTree);
+                pRootOfTree = pRootOfTree.right;
+            }else{
+                pRootOfTree = stack.pop(); // 根
+                if(list == null){
+                    list = pRootOfTree;
+                }else{ // 每次往list的左边插入
+                    list.left = pRootOfTree;
+                    pRootOfTree.right = list;
+                    list = pRootOfTree;
+                }
+                pRootOfTree = pRootOfTree.left; // 左
+            }
+        }
+        return list;
+    }
+}
+```
+
+### 序列化二叉树-P194
+
+```txt
+实现两个函数，分别用来序列化和反序列化二叉树。
+```
+
+```java
+/*
+public class TreeNode {
+    int val = 0;
+    TreeNode left = null;
+    TreeNode right = null;
+    public TreeNode(int val) {
+        this.val = val;
+    }
+}
+/*
+    算法思想：根据前序遍历规则完成序列化与反序列化。
+    所谓序列化指的是遍历二叉树为字符串；所谓反序列化指的是依据字符串重新构造成二叉树。
+    依据前序遍历序列来序列化二叉树，因为前序遍历序列是从根结点开始的。
+    当在遍历二叉树时碰到Null指针时，这些Null指针被序列化为一个特殊的字符“#”。
+    另外，结点之间的数值用逗号隔开。
+*/
+public class Solution {
+    private StringBuilder sb = new StringBuilder();
+    //序列化二叉树	
+	public String Serialize(TreeNode root) {
+		if(root == null){
+			sb.append("#,");
+			return sb.toString();
+		}
+		sb.append(root.val+",");
+		sb.append(Serialize(root.left));
+		sb.append(Serialize(root.right));
+		return sb.toString();
+	}
+    
+    
+	private int index = -1;
+	//反序列化二叉树
+	public TreeNode Deserialize(String str) {
+		index++;
+		int len = str.length();
+		if(index>=len){
+			return null;
+		}
+		String [] strr = str.split(",");
+		TreeNode node = null;
+		if(!strr[index].equals("#")){
+			node = new TreeNode(Integer.valueOf(strr[index]));
+			node.left = Deserialize(str);
+			node.right = Deserialize(str);			
+		}
+		return node;
+	}
+	
+}
+```
+
+### 数字全排列
+
+```java
+public class Solution {
+
+    public void generate(int n) {
+        int[] arrays = new int[n];
+        boolean[] isUsed = new boolean[n];
+        generate(0, n, arrays, isUsed);
+    }
+
+    private void generate(int cur, int n, int[] arrays, boolean[] isUsed) {
+        if (cur == n) {
+            System.out.println(Arrays.toString(arrays));
+            return;
+        }
+        for (int i = 0; i < n; i++) { // 每个cur位置可选值
+            if (isUsed[i] == false) {
+                arrays[cur] = i;
+                isUsed[i] = true; 
+                generate(cur+1,n,arrays,isUsed);
+                isUsed[i] = false;
+            }
+        }
+    }
+}
+```
+
+
+
+### 字符串的全排列-P197
+
+```txt
+输入一个字符串，打印字符串中所有字符的全排列。
+例如abc，打印abc、acb、bac、bca、cab、cba。
+```
+
+```java
+public class Solution {
+    public void generate(String s) {
+        char[] arrays = new char[s.length()];
+        boolean[] isUsed = new boolean[s.length()];
+        generate(0, s.length(),s.toCharArray(), arrays, isUsed);
+    }
+
+    private void generate(int cur, int n,char[] chars, char[] arrays, boolean[] isUsed) {
+        if (cur == n) {
+            System.out.println(Arrays.toString(arrays));
+            return;
+        }
+        for (int i = 0; i < n; i++) { // 每个cur位置可选值
+            if (isUsed[i] == false) {
+                arrays[cur] = chars[i];
+                isUsed[i] = true;
+                generate(cur+1,n,chars,arrays,isUsed);
+                isUsed[i] = false;
+            }
+        }
+    }
+}
+
+// 方法二
+ /*
+     * 参数arrayA:给定字符串的字符数组
+     * 参数start:开始遍历字符与其后面各个字符将要进行交换的位置
+     * 参数end:字符串数组的最后一位
+     * 函数功能：输出字符串数字的各个字符全排列
+     */
+    public void recursionArrange(char[] arrayA,int start,int end){
+        if(end <= 1)   
+             return;
+        if(start == end){
+            for(int i = 0;i < arrayA.length;i++)
+                System.out.print(arrayA[i]);
+            System.out.println();
+        }
+        else{
+            for(int i = start;i <= end;i++){
+                swap(arrayA,i,start);
+                recursionArrange(arrayA,start+1,end);
+                swap(arrayA,i,start);
+            }
+        }
+        
+    }
+    //交换数组m位置和n位置上的值
+    public void swap(char[] arrayA,int m,int n){
+        if(m==n) return;
+        char temp = arrayA[m];
+        arrayA[m] = arrayA[n];
+        arrayA[n] = temp;
+    }
+```
+
+# 优化时间和空间效率
+
+## 时间效率
+
+### 数字中出现次数超过一半的数字-P205
+
+```
+数组中有一个数字出现的次数超过数组长度的一半，找出这个数字。
+例如{1,2,3,2,2,2,5,4,2}，输出2.
+```
+
+#### 基于Partition函数的时间O（n）的算法
+
+```java
+public class Solution {
+
+    public int moreThanHalfNum(int[] arrays) {
+        if (arrays == null || arrays.length == 0) {
+            throw new RuntimeException("input invalid！");
+        }
+        int mid = arrays.length / 2;
+        int start = 0;
+        int end = arrays.length - 1;
+        int index = partition(arrays, start, end);
+        while (index != mid) {
+            if (index > mid) {
+                end = index - 1;
+                index = partition(arrays, start, end);
+            } else {
+                start = index + 1;
+                partition(arrays, start, end);
+            }
+        }
+        return arrays[index];
+    }
+}
+```
+
+
+
+#### 根据数组特点的O（n）算法
+
+```
+由于要寻找的这个数的个数大于其他数的个数之和。则可以定义两个变量，一个记录数S，一个记录S出现的次数。
+```
+
+![image-20210328123019873](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328123020.png)
+
+```java
+public class Solution {
+    public int moreThanHalfNum(int[] arrays) {
+        if (arrays == null || arrays.length == 0) {
+            throw new RuntimeException("input invalid！");
+        }
+        int res = arrays[0];
+        int times = 1;
+        for (int i = 0; i < arrays.length; i++) {
+            if (times == 0) {
+                res = arrays[i];
+                times = 1;
+            } else if (arrays[i] == res) {
+                times++;
+            } else {
+                times--;
+            }
+        }
+        if (times > 0) {
+            return res;
+        }
+        else {
+            throw new RuntimeException("input invalid！");
+        }
+    }
+}
+```
+
