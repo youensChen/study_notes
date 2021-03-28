@@ -994,13 +994,214 @@ OK
 
 ## 事务
 
+![image-20210328194740820](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328194740.png)
 
+```bash
+127.0.0.1:6379> MULTI # 开启事务 一致性、顺序性、排他性
+OK
+127.0.0.1:6379> set k1 v1 # 入队，并没有执行
+QUEUED
+127.0.0.1:6379> set k2 v2
+QUEUED
+127.0.0.1:6379> MSET k3 v3 k4 v4
+QUEUED
+127.0.0.1:6379> MGET k1 k2 k4
+QUEUED
+127.0.0.1:6379> EXEC # 执行队列中的所有命令同时关闭事务
+1) OK
+2) OK
+3) OK
+4) 1) "v1"
+   2) "v2"
+   3) "v4"
+
+
+127.0.0.1:6379> MULTI
+OK
+127.0.0.1:6379> set k5 v5
+QUEUED
+127.0.0.1:6379> set k6 v6
+QUEUED
+127.0.0.1:6379> DISCARD # 放弃事务
+OK
+127.0.0.1:6379> get k6
+(nil)
+
+
+################  命令错误（编译型异常），所有指令都不会执行
+127.0.0.1:6379> MULTI
+OK
+127.0.0.1:6379> set k1 v1
+QUEUED
+127.0.0.1:6379> set k2 #错误的指令
+(error) ERR wrong number of arguments for 'set' command # 命令报错
+127.0.0.1:6379> set k3 v3
+QUEUED
+127.0.0.1:6379> EXEC
+(error) EXECABORT Transaction discarded because of previous errors.# 事务报错
+
+
+################  命令错误（运行时异常），没有错误的指令都会执行，而错误的指令会抛异常（没有原子性）
+127.0.0.1:6379> set k1 v1
+OK
+127.0.0.1:6379> MULTI
+OK
+127.0.0.1:6379> INCR k1 # 无法对字符串进行加一操作
+QUEUED
+127.0.0.1:6379> set k2 v2 # 正常执行
+QUEUED
+127.0.0.1:6379> get k2 # 正常执行
+QUEUED
+127.0.0.1:6379> EXEC
+1) (error) ERR value is not an integer or out of range
+2) OK
+3) "v2"
+
+```
+
+![image-20210328200853641](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328200853.png)
+
+```bash
+127.0.0.1:6379> MSET money 100 coast 0
+OK
+127.0.0.1:6379> WATCH money  # 监视money
+OK
+127.0.0.1:6379> MULTI 
+OK
+127.0.0.1:6379> DECRBY money 20
+QUEUED
+127.0.0.1:6379> INCRBY coast 20
+QUEUED
+127.0.0.1:6379> EXEC ###正常执行成功
+1) (integer) 80
+2) (integer) 20
+127.0.0.1:6379> MGET money coast
+1) "80"
+2) "20"
+
+#############模拟多线程，watch加锁（乐观锁），如果有其他线程修改了该线程要操作的值，事务失败。
+127.0.0.1:6379> WATCH money #监视money（拿到version）
+OK
+127.0.0.1:6379> MULTI
+OK
+127.0.0.1:6379> DECRBY money 20
+QUEUED
+127.0.0.1:6379> INCRBY coast 20
+QUEUED
+###################### 此时，另外一个线程执行
+            127.0.0.1:6379> get money #（已修改version）
+            "80"
+            127.0.0.1:6379> set money 1000
+            OK
+######################
+
+127.0.0.1:6379> EXEC # 执行之前其他线程已经修改了money（对比version，发现不一样了）
+(nil)
+
+
+```
+
+> 事务失败，从新开始		
+
+![image-20210328203215458](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328203215.png)
 
 ## Jedis
+
+> 1、导入坐标
+
+```xml
+<dependency>
+    <groupId>redis.clients</groupId>
+    <artifactId>jedis</artifactId>
+    <version>3.2.0</version>
+</dependency>
+
+<!--fastjson-->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>fastjson</artifactId>
+    <version>1.2.62</version>
+</dependency>
+```
+
+2、连接测试
+
+```java
+public class RedisTest {
+    public static void main(String[] args) {
+        // 1、new Jedis对象
+        Jedis jedis = new Jedis("127.0.0.1", 6379);
+        // jedis的方法就是之前学的所有命令
+        System.out.println(jedis.ping());
+    }
+}
+```
+
+![image-20210328211515744](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328211515.png)
+
+![image-20210328211649557](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328211649.png)
+
+### string
+
+![image-20210328212053820](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328212053.png)
+
+### list
+
+![image-20210328212304714](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328212304.png)
+
+### set
+
+![image-20210328212605795](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328212606.png)
+
+### hash
+
+![image-20210328212749657](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328212749.png)
+
+### 事务
+
+![image-20210328213304159](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328213304.png)
+
+![image-20210328213342561](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328213342.png)
 
 
 
 ## SpringBoot 整合
+
+![image-20210328214458481](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328214458.png)
+
+![image-20210328215220375](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328215220.png)
+
+### 步骤
+
+
+
+1、导入依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+
+2、配置
+
+```properties
+spring.redis.host=127.0.0.1
+spring.redis.port=6379
+```
+
+3、测试
+
+![image-20210328220547253](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328220547.png)
+
+### 源码
+
+
+
+![image-20210328220534811](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328220535.png)
+
+
 
 
 
