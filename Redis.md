@@ -620,27 +620,409 @@ OK
 
 ### Set
 
+>Set的命令都已S开头，对比List不同的是Set里面不能有相同的数据
+
+```bash
+127.0.0.1:6379> SADD myset 1 2 3 4 # 创建并添加
+(integer) 4
+127.0.0.1:6379> SRANDMEMBER myset 2
+1) "4"
+2) "3"
+127.0.0.1:6379> SRANDMEMBER myset 2 # 随机获取指定个数
+1) "4"
+2) "2"
+127.0.0.1:6379> SRANDMEMBER myset 2
+1) "3"
+2) "1"
+127.0.0.1:6379> SMEMBERS myset # 取全部
+1) "1"
+2) "2"
+3) "3"
+4) "4"
+
+
+127.0.0.1:6379> SISMEMBER myset 2 # 判断是否存在
+(integer) 1
+127.0.0.1:6379> SISMEMBER myset 6
+(integer) 0
+
+
+127.0.0.1:6379> SCARD myset # 集合元素个数
+(integer) 4
+127.0.0.1:6379> SADD myset 5
+(integer) 1
+127.0.0.1:6379> SCARD myset
+(integer) 5
+
+
+127.0.0.1:6379> SMEMBERS myset 
+1) "1"
+2) "2"
+3) "3"
+4) "4"
+5) "5"
+127.0.0.1:6379> SREM myset 3 # 移除
+(integer) 1
+127.0.0.1:6379> SMEMBERS myset
+1) "1"
+2) "2"
+3) "4"
+4) "5"
+
+
+127.0.0.1:6379> SMEMBERS myset
+1) "1"
+2) "2"
+3) "4"
+4) "5"
+127.0.0.1:6379> SPOP myset 1 # 随机删除指定数目的元素
+1) "2"
+127.0.0.1:6379> SMEMBERS myset
+1) "1"
+2) "4"
+3) "5"
+
+
+127.0.0.1:6379> SMOVE myset set2 4 # 指定元素移动到另外一个集合
+(integer) 1 
+127.0.0.1:6379> SMEMBERS myset
+1) "1"
+2) "5"
+127.0.0.1:6379> SMEMBERS set2
+1) "4"
+
+############### 集合差集、并集、交集
+127.0.0.1:6379> SADD set1 1 2 3 4
+(integer) 4
+127.0.0.1:6379> SADD set2 3 4 5 6
+(integer) 4
+127.0.0.1:6379> SMEMBERS set1
+1) "1"
+2) "2"
+3) "3"
+4) "4"
+127.0.0.1:6379> SMEMBERS set2
+1) "3"
+2) "4"
+3) "5"
+4) "6"
+127.0.0.1:6379> SDIFF set1 set2  # 差集
+1) "1"
+2) "2"
+
+127.0.0.1:6379> SINTER set1 set2 # 交集
+1) "3"
+2) "4"
+
+127.0.0.1:6379> SUNION set1 set2 # 并集
+1) "1"
+2) "2"
+3) "3"
+4) "4"
+5) "5"
+6) "6"
+
+
+```
+
 
 
 ### Hash
 
+> 类似java里的map，所有的命令都已h开头
 
+```bash
+127.0.0.1:6379> HSET person name youens # 创建设置一个k-v
+(integer) 1
+127.0.0.1:6379> HSET person age 22
+(integer) 1
+127.0.0.1:6379> HSET person interest beauty
+(integer) 1
+127.0.0.1:6379> HGET person name # 获取一个k的v
+"youens"
+
+127.0.0.1:6379> HMSET person height 170 weight 62 # 一次性设置多个k-v
+OK
+127.0.0.1:6379> HMGET person name age height weight # 一次性获取多个v
+1) "youens"
+2) "22"
+3) "170"
+4) "62"
+
+
+127.0.0.1:6379> HGETALL person # 获取所有键值对（每两个一组）
+ 1) "name"
+ 2) "youens"
+ 3) "age"
+ 4) "22"
+ 5) "interest"
+ 6) "beauty"
+ 7) "height"
+ 8) "170"
+ 9) "weight"
+10) "62"
+
+127.0.0.1:6379> HKEYS person # 获得所有key
+1) "name"
+2) "age"
+3) "height"
+4) "weight"
+127.0.0.1:6379> HVALS person # 获得所有value
+1) "youens"
+2) "22"
+3) "170"
+4) "62"
+
+
+
+
+127.0.0.1:6379> HDEL person interest # 删除k-v
+(integer) 1
+127.0.0.1:6379> HGETALL person
+1) "name"
+2) "youens"
+3) "age"
+4) "22"
+5) "height"
+6) "170"
+7) "weight"
+8) "62"
+
+127.0.0.1:6379> HLEN person # 键值对数量
+(integer) 4
+
+
+127.0.0.1:6379> HEXISTS person name # 判断某个k是否存在
+(integer) 1
+127.0.0.1:6379> HEXISTS person asfsf
+(integer) 0
+
+
+127.0.0.1:6379> HINCRBY person height 10 # 增加指定值
+(integer) 180
+127.0.0.1:6379> HINCRBY person height -5
+(integer) 175
+
+
+127.0.0.1:6379> HSETNX person name chen # 不存在则创建
+(integer) 0
+127.0.0.1:6379> HSETNX person love cjy
+(integer) 1
+
+```
+
+>hash更适合存储对象
 
 ### Zset
 
+> 对比set，Zset是有序的集合，类似java里的 TreeSet
+>
+> 所有命令以 z 开头
 
+```bash
+127.0.0.1:6379> ZADD zset 1 one 2 two 3 three # 创建设置
+(integer) 3
+127.0.0.1:6379> ZRANGE zset 0 -1 # 获取所有值
+1) "one"
+2) "two"
+3) "three"
+127.0.0.1:6379> ZREM zset one # 删除指定的值
+(integer) 1
+127.0.0.1:6379> ZRANGE zset 0 -1
+1) "two"
+2) "three"
+
+
+127.0.0.1:6379> ZRANGEBYSCORE zset -inf +inf # 根据分数对范围在[-inf, +inf]范围内元素进行排序
+1) "two"
+2) "three"
+127.0.0.1:6379> ZRANGEBYSCORE zset -inf +inf withscores # 带上分数
+1) "two"
+2) "2"
+3) "three"
+4) "3"
+127.0.0.1:6379> ZREVRANGE zset 0 -1 withscores # 降序
+1) "three" 
+2) "3"
+3) "two"
+4) "2"
+
+
+
+127.0.0.1:6379> ZCARD zset # 获取长度
+(integer) 2
+
+127.0.0.1:6379> ZCOUNT zset 2 3 # 获取指定score之间的个数
+(integer) 2
+127.0.0.1:6379> ZCOUNT zset 1 2
+(integer) 1
+
+```
+
+![image-20210328154451741](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328154451.png)
 
 ## 三种特殊数据类型
 
+### geospatial 地理空间
+
+![image-20210328160441189](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328160441.png)
+
+![image-20210328161144506](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328161144.png)
+
+```bash
+127.0.0.1:6379> GEOADD dongguan 113.882535 22.906888 dgut # 添加城市地理数据
+(integer) 1 
+127.0.0.1:6379> GEOADD dongguan 113.894623 22.923591 songhu
+(integer) 1
+127.0.0.1:6379> GEOADD dongguan 113.863117 22.925935 donghua
+(integer) 1
 
 
-### geospatial
+127.0.0.1:6379> GEOPOS dongguan dgut songhu # 获取指定位置的经纬度
+1) 1) "113.88253659009933472"
+   2) "22.90688725210608112"
+2) 1) "113.89462262392044067"
+   2) "22.92359106454612316"
+
+
+127.0.0.1:6379> GEODIST dongguan dgut songhu km # 获取两位置的直线距离
+"2.2327"
+127.0.0.1:6379> GEODIST dongguan dgut songhu m
+"2232.6967"
+127.0.0.1:6379> GEODIST dongguan dgut donghua km
+"2.9063"
+
+
+127.0.0.1:6379> GEORADIUS dongguan 114 23 10 km # 以某个位置为圆心，指定半径在内有的地方（附近的人）
+(empty list or set)
+127.0.0.1:6379> GEORADIUS dongguan 114 23 100 km
+1) "dgut"
+2) "songhu"
+3) "donghua"
+127.0.0.1:6379> GEORADIUS dongguan 114 23 100 km withdist
+1) 1) "dgut"
+   2) "15.8743"
+2) 1) "songhu"
+   2) "13.7367"
+3) 1) "donghua"
+   2) "16.2598"
+127.0.0.1:6379> GEORADIUS dongguan 114 23 100 km withdist count 1 # 指定个数
+1) 1) "songhu"
+   2) "13.7367"
+
+
+127.0.0.1:6379> GEORADIUSBYMEMBER dongguan dgut 2 km # 以指定地点为圆心，查找附近的位置
+1) "dgut"
+127.0.0.1:6379> GEORADIUSBYMEMBER dongguan dgut 3 km
+1) "dgut"
+2) "songhu"
+3) "donghua"
+
+```
+
+![image-20210328163045322](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328163045.png)
+
+> geospatial底层使用Zset来实现，所有可以使用Zset的命令来操作geospatial
+
+```bash
+127.0.0.1:6379> ZRANGE dongguan 0 -1
+1) "dgut"
+2) "songhu"
+3) "donghua"
+127.0.0.1:6379> ZREM dongguan songhu
+(integer) 1
+127.0.0.1:6379> ZRANGE dongguan 0 -1
+1) "dgut"
+2) "donghua"
+
+```
 
 
 
 ### hyperloglogs
 
+![image-20210328164546239](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328164546.png)
+
+> 所有命令都以PF开头
+
+```bash
+127.0.0.1:6379> PFADD mykey a b c d e f a # 创建
+(integer) 1
+127.0.0.1:6379> PFCOUNT mykey # 基数(不一样)长度
+(integer) 6 
+127.0.0.1:6379> 
+
+127.0.0.1:6379> PFADD mykey1 a f b d k c 
+(integer) 1
+127.0.0.1:6379> PFCOUNT mykey2
+(integer) 7
+127.0.0.1:6379> PFCOUNT mykey1
+(integer) 6
+127.0.0.1:6379> PFMERGE mykey2 mykey mykey1 # 合并mykey和mykey1到mykey2
+OK
+127.0.0.1:6379> PFCOUNT mykey2
+(integer) 7
 
 
-### bitmaps
+```
+
+
+
+### bitmap
+
+![image-20210328165815631](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328165815.png)
+
+
+
+```bash
+127.0.0.1:6379> SETBIT bitmap 0 0 # 创建设置
+(integer) 0
+127.0.0.1:6379> SETBIT bitmap 1 0
+(integer) 0
+127.0.0.1:6379> SETBIT bitmap 2 1
+(integer) 0
+127.0.0.1:6379> GETBIT bitmao 1 # 获取
+(integer) 0
+127.0.0.1:6379> BITCOUNT bitmap  #统计1的个数
+(integer) 1
+127.0.0.1:6379> BITCOUNT bitmap 0 1 #范围统计1的个数
+(integer) 1
+
+```
+
+
+
+## 事务
+
+
+
+## Jedis
+
+
+
+## SpringBoot 整合
+
+
+
+## Redis.conf详解
+
+
+
+## Redis持久化
+
+
+
+## Redis发布订阅
+
+
+
+## Redis主从复制
+
+
+
+## Redis缓存穿透和雪崩
+
+ 
+
+
 
