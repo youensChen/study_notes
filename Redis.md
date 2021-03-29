@@ -1327,15 +1327,261 @@ maxclients 10000 # 客户端最大连接数
 
 ## Redis发布订阅
 
+![image-20210329194600635](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329194600.png)
+
+![image-20210329194709761](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329194709.png)
+
+### 命令
+
+![image-20210329194828069](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329194828.png)
+
+```bash
+127.0.0.1:6379> SUBSCRIBE youens # 订阅youens
+Reading messages... (press Ctrl-C to quit)
+1) "subscribe"
+2) "youens"
+3) (integer) 1
+################发布者发布
+	127.0.0.1:6379> PUBLISH youens 'hello, my follower' # 往youens频道发布消息
+	(integer) 1
+# 接收到发布者发布的消息
+1) "message"
+2) "youens"
+3) "hello, my follower"
+
+```
+
+![image-20210329195517912](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329195518.png)
+
+### 原理
+
+![image-20210329195633509](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329195633.png)
+
+![image-20210329200136487](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329200136.png)
+
 
 
 ## Redis主从复制
+
+### 概念
+
+![image-20210329200243032](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329200243.png)
+
+![image-20210329200356751](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329200356.png)
+
+### 环境配置
+
+![image-20210329202356083](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329202356.png)
+
+![image-20210329202734541](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329202734.png)
+
+### 一主二从
+
+默认情况下，Redis每个节点都是主机。配置主从复制只需要配置从机即可
+
+```bash
+127.0.0.1:6380> SLAVEOF 127.0.0.1 6379 # 认老大
+OK
+127.0.0.1:6380> info replication
+# Replication
+role:slave
+master_host:127.0.0.1
+master_port:6379
+master_link_status:up
+master_last_io_seconds_ago:3
+master_sync_in_progress:0
+slave_repl_offset:14
+slave_priority:100
+slave_read_only:1
+connected_slaves:0
+master_replid:21725978fc7e3e9967becbf1771d5f92ce33e229
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:14
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:14
+
+# 在主机中查看
+127.0.0.1:6379> info replication
+# Replication
+role:master
+connected_slaves:1
+slave0:ip=127.0.0.1,port=6380,state=online,offset=98,lag=1
+master_replid:21725978fc7e3e9967becbf1771d5f92ce33e229
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:98
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:98
+
+```
+
+配置完成后主机info
+
+![image-20210329203629678](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329203629.png)
+
+==在命令中配置是暂时的，使用配置文件配置主从复制才是永久的==
+
+![image-20210329203921183](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329203921.png)
+
+### 细节
+
+![image-20210329204159203](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329204159.png)
+
+![image-20210329204757250](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329204757.png)
+
+### 主从链表型
+
+![image-20210329205119427](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329205119.png)
+
+![image-20210329205453324](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329205453.png)
+
+### 哨兵模式
+
+==主机宕机后，自动选举一个从机当主机的模式==
+
+![image-20210329210406688](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329210406.png)
+
+![image-20210329210602815](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329210603.png)
+
+![image-20210329210733348](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329210733.png)
+
+
+
+#### 测试
+
+1、sentinel.conf
+
+```bash
+# 1代表若主机宕机后，会自动选取一个从机当新的主机
+sentinel monitor myredis 127.0.0.1 6379 1 
+```
+
+2、启动redis-sentinel
+
+```bash
+[youens@youens bin]$ redis-sentinel myConfig/sentinel.conf 
+5239:X 29 Mar 2021 21:14:23.792 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+5239:X 29 Mar 2021 21:14:23.792 # Redis version=5.0.12, bits=64, commit=00000000, modified=0, pid=5239, just started
+5239:X 29 Mar 2021 21:14:23.792 # Configuration loaded
+5239:X 29 Mar 2021 21:14:23.793 # You requested maxclients of 10000 requiring at least 10032 max file descriptors.
+5239:X 29 Mar 2021 21:14:23.793 # Server can't set maximum open files to 10032 because of OS error: Operation not permitted.
+5239:X 29 Mar 2021 21:14:23.793 # Current maximum open files is 4096. maxclients has been reduced to 4064 to compensate for low ulimit. If you need higher maxclients increase 'ulimit -n'.
+                _._                                                  
+           _.-``__ ''-._                                             
+      _.-``    `.  `_.  ''-._           Redis 5.0.12 (00000000/0) 64 bit
+  .-`` .-```.  ```\/    _.,_ ''-._                                   
+ (    '      ,       .-`  | `,    )     Running in sentinel mode
+ |`-._`-...-` __...-.``-._|'` _.-'|     Port: 26379
+ |    `-._   `._    /     _.-'    |     PID: 5239
+  `-._    `-._  `-./  _.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |           http://redis.io        
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |                                  
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+      `-._    `-.__.-'    _.-'                                       
+          `-._        _.-'                                           
+              `-.__.-'                                               
+
+5239:X 29 Mar 2021 21:14:23.794 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+5239:X 29 Mar 2021 21:14:23.795 # Sentinel ID is 27ce03501d79496a26917fda295b6441d56fe546
+5239:X 29 Mar 2021 21:14:23.795 # +monitor master myredis 127.0.0.1 6379 quorum 1
+5239:X 29 Mar 2021 21:14:23.796 * +slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:14:23.797 * +slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+
+
+```
+
+此时，若主机宕机
+
+sentinel进程会自动切换主机
+
+```bash
+5239:X 29 Mar 2021 21:19:29.058 # +sdown master myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.058 # +odown master myredis 127.0.0.1 6379 #quorum 1/1
+5239:X 29 Mar 2021 21:19:29.058 # +new-epoch 1
+5239:X 29 Mar 2021 21:19:29.058 # +try-failover master myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.061 # +vote-for-leader 27ce03501d79496a26917fda295b6441d56fe546 1
+5239:X 29 Mar 2021 21:19:29.061 # +elected-leader master myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.061 # +failover-state-select-slave master myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.145 # +selected-slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.145 * +failover-state-send-slaveof-noone slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.216 * +failover-state-wait-promotion slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.906 # +promoted-slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.906 # +failover-state-reconf-slaves master myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:29.962 * +slave-reconf-sent slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:30.915 * +slave-reconf-inprog slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:30.915 * +slave-reconf-done slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:31.005 # +failover-end master myredis 127.0.0.1 6379
+5239:X 29 Mar 2021 21:19:31.005 # +switch-master myredis 127.0.0.1 6379 127.0.0.1 6380
+5239:X 29 Mar 2021 21:19:31.005 * +slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6380
+5239:X 29 Mar 2021 21:19:31.005 * +slave slave 127.0.0.1:6379 127.0.0.1 6379 @ myredis 127.0.0.1 6380
+
+
+#此时6380从机变成主机
+127.0.0.1:6380> info replication
+# Replication
+role:master
+connected_slaves:1
+slave0:ip=127.0.0.1,port=6381,state=online,offset=26685,lag=0
+master_replid:0580530ad31b337209039ae774bf8f59aa4d3a7b
+master_replid2:21725978fc7e3e9967becbf1771d5f92ce33e229
+master_repl_offset:26817
+second_repl_offset:21549
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:26817
+
+# 如果宕机的主机重新启动了，那么会将它变成从机
+5239:X 29 Mar 2021 21:26:50.101 # -sdown slave 127.0.0.1:6379 127.0.0.1 6379 @ myredis 127.0.0.1 6380
+5239:X 29 Mar 2021 21:27:00.083 * +convert-to-slave slave 127.0.0.1:6379 127.0.0.1 6379 @ myredis 127.0.0.1 6380
+
+```
+
+#### 优缺点
+
+![image-20210329212956301](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329212956.png)
+
+全部配置
+
+![image-20210329213046365](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329213046.png)
+
+![image-20210329213122733](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329213122.png)
+
+![image-20210329213137488](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329213137.png)
 
 
 
 ## Redis缓存穿透和雪崩
 
- 
+###  缓存穿透
 
+![image-20210329214543905](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329214544.png)
 
+#### 解决方案
+
+![image-20210329214938782](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329214938.png)
+
+![image-20210329215013361](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329215013.png)
+
+![image-20210329215023710](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329215023.png)
+
+### 缓存击穿
+
+![image-20210329215231733](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329215231.png)
+
+### 缓存雪崩
+
+![image-20210329215522962](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329215523.png)
+
+#### 解决方案
+
+![image-20210329215958821](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329215959.png)
 
