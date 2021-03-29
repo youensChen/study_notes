@@ -1201,15 +1201,127 @@ spring.redis.port=6379
 
 ![image-20210328220534811](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210328220535.png)
 
+![image-20210329152959242](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329152959.png)
 
+### 自定义RedisTemplate
+
+![image-20210329153504556](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329153504.png)
+
+###  操作redis工具类
+
+![image-20210329154356785](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329154356.png)
 
 
 
 ## Redis.conf详解
 
+### 单位
+
+![image-20210329155857547](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329155857.png)
+
+单位对大小写不敏感
+
+
+
+### INCLUDES包含其他文件
+
+![image-20210329160343900](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329160344.png)
+
+### NETWORK网络
+
+![image-20210329160456857](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329160456.png)
+
+
+
+### GENERAL通用
+
+![image-20210329160738313](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329160738.png)
+
+
+
+### SNAPSHOTTING快照
+
+![image-20210329161144114](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329161144.png)
+
+
+
+### REPLICATION 主从复制相关
+
+
+
+### SECURITY安全
+
+![image-20210329161643008](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329161643.png)
+
+### CLIENTS客户端
+
+```bash
+maxclients 10000 # 客户端最大连接数
+```
+
+
+
+### MEMORY MANAGEMENT内存管理
+
+![image-20210329162026616](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329162026.png)
+
+
+
+### APPEND ONLY 模式 aof配置
+
+![image-20210329162345812](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329162345.png)
+
 
 
 ## Redis持久化
+
+![image-20210329162638579](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329162638.png)
+
+### RDB（Redis Database）
+
+![image-20210329162837378](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329162837.png)
+
+![image-20210329163032145](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329163032.png)
+
+==rdb保存的文件是dump.rdb==
+
+==aof保存的文件是appendonly.aof==
+
+#### rdb文件产生
+
+![image-20210329164037512](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329164037.png)
+
+#### 读取rdb文件
+
+![image-20210329164250328](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329164250.png)
+
+#### 优缺点
+
+![image-20210329164444277](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329164444.png)
+
+
+
+### AOF（Append Only File）
+
+![image-20210329165455799](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329165455.png)
+
+![image-20210329165524009](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329165524.png)
+
+![image-20210329165602013](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329165602.png)
+
+![image-20210329170121650](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329170121.png)
+
+![image-20210329170202447](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329170202.png)
+
+![image-20210329170427199](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329170427.png)
+
+重新规则说明
+
+![image-20210329170918007](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329170918.png)
+
+#### 扩展
+
+![image-20210329171232271](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329171232.png)
 
 
 
