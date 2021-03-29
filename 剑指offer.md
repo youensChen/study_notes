@@ -2153,3 +2153,201 @@ public class Solution {
 }
 ```
 
+### 最小的k个数P-209
+
+```txt
+输入n个整数，找出其中最小的k个数。
+如{4,5,1,6,2,7,3,8,}，则最小的4个数是{1,2,3,4}
+```
+
+#### 方法一
+
+```
+对数组进行排序，时间复杂度O（nlogn）
+```
+
+#### 方法二
+
+```
+该方法会修改输入的数组。基于partition函数来解决，直到(index=partition() == k-1)，得到的k个最小数不一定是排序的。时间复杂度O(n)
+```
+
+#### 方法三
+
+```
+如果不能修改输入的数据。我们定义一个容量为k的容器。遍历输入，若容器为空直接插入；若容器不为空，取容器中最大的数与待插入的数进行比较，若待插入的数小于最大的数，则替换最大的数，否则直接抛弃该带插入的数。另外，这个容器使用大根堆实现。适合处理海量数据。时间复杂度O(nlogk)
+```
+
+```java
+public class Solution {
+    public Integer[] getLeastNumbers(int[] arrays, int k) {
+        if (arrays == null || arrays.length == 0 || arrays.length < k) {
+            return null;
+        }
+        // 默认是最小堆，定制为最大堆
+        PriorityQueue<Integer> maxHeap = new PriorityQueue<>(k, (x, y) -> y - x);
+
+        for (int i = 0; i < arrays.length; i++) {
+            if (maxHeap.size() != k) {
+                maxHeap.offer(arrays[i]);
+            } else if (maxHeap.peek() > arrays[i]) {
+                maxHeap.poll();
+                maxHeap.offer(arrays[i]);
+            }
+        }
+        Integer[] res = new Integer[k];
+        maxHeap.toArray(res);
+        return res;
+    }
+}
+```
+
+​	
+
+## 数据流中的中位数-P214
+
+```
+如果数据流中读出了奇数个数值，那么中位数就是排序后的中间的数值；如果数据流中读出了偶数个数值，那么中位数就是排序后中间两个数的平均值。
+```
+
+|    数据结构    |   插入时间复杂度    | 得到中位数的时间复杂度 |
+| :------------: | :-----------------: | :--------------------: |
+| 没有排序的数组 |        O(1)         |          O(n)          |
+|    排序数组    |        O(n)         |          O(1)          |
+|    排序链表    |        O(n)         |          O(1)          |
+|   二叉搜索树   | 平均O(logn)最差O(n) |  平均O(logn)最差O(n)   |
+|     AVL树      |       O(logn)       |          O(1)          |
+|   最大最小堆   |       O(logn)       |          O(1)          |
+
+```
+我们可以把输入的数据流分为两个部分，左边的部分使用最大堆存储，右边的部分使用最小堆存储。所以可以快速地得到中位数。
+```
+
+```java
+public class Solution {
+
+   //生成最大堆
+    PriorityQueue<Integer> maxHeap = new PriorityQueue<Integer>(11,new maxHeapComparator());
+    //生成最小堆
+    PriorityQueue<Integer> minHeap = new PriorityQueue<Integer>(11,new minHeapComparator());
+    
+    int maxSize = 0;//初始化堆的大小，防止NullPointerException
+    int minSize = 0;
+    
+    public void reshapeHeapSize(){//平衡两堆元素的数目
+        if(this.maxHeap.size() == this.minHeap.size() + 2){
+            this.minHeap.add(this.maxHeap.poll());
+        }
+        if(this.minHeap.size() == this.maxHeap.size() + 2){
+            this.maxHeap.add(this.minHeap.poll());
+        }
+    }
+    
+    public void Insert(Integer num) {
+        
+        if(this.maxHeap.isEmpty()){
+            this.maxHeap.add(num);
+        }else{
+            if(this.maxHeap.peek() > num){
+                this.maxHeap.add(num);
+            }else{
+                if(this.minHeap.isEmpty()){
+                    this.minHeap.add(num);
+                }else{
+                    if(this.minHeap.peek() <= num){
+                        this.minHeap.add(num);
+                    }else{
+                        this.maxHeap.add(num);
+                    }
+                }
+            }
+        }
+        reshapeHeapSize();
+    }
+
+    public Double GetMedian() {
+    	if(!maxHeap.isEmpty()){
+    		 maxSize = this.maxHeap.size();
+    	}
+    	if(!minHeap.isEmpty()){
+    		minSize = this.minHeap.size();
+    	}
+        if(maxSize+minSize == 0){
+            throw new RuntimeException();
+        }
+        Integer maxHeapNum = this.maxHeap.peek();
+        Integer minHeapNum = this.minHeap.peek();
+        if(((maxSize + minSize) % 2) == 0){
+            return (double)((maxHeapNum+minHeapNum))/2;
+        }else{
+            return (double)(maxSize > minSize ? maxHeapNum : minHeapNum);
+        }
+    }
+    
+    public class minHeapComparator implements Comparator<Integer>{
+        public int compare(Integer o1,Integer o2){
+            return o1-o2;
+        }
+    }
+    public class maxHeapComparator implements Comparator<Integer>{
+        public int compare(Integer o1,Integer o2){
+        	return o2-o1;
+        }
+    }
+}
+```
+
+## 连续子数组的最大和-P218
+
+```
+输入一个整型数组。求所有子数组的和的最大值。要求时间复杂度O(n)
+例如{1，-2,3,10，-4,7,2，-5}的和最大子数组为{3,10，-4,7,2}，最大和为18。
+```
+
+#### 分析数据规律
+
+![image-20210329103639656](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329103646.png)
+
+```java
+public int findMaxSumOfSubArray(int[] numbers) {
+    if (numbers == null || numbers.length == 0) {
+        throw new RuntimeException("input invalid!");
+    }
+    int maxSum = Integer.MIN_VALUE;
+    int curSum = 0;
+    for (int i = 0; i < numbers.length; i++) {
+        curSum += numbers[i];
+        if (curSum < 0) {
+            curSum = 0;
+        }
+        if (curSum > maxSum) {
+            maxSum = curSum;
+        }
+    }
+    return maxSum;
+}	
+```
+
+#### 动态规划
+
+![image-20210329104344174](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210329104344.png)
+
+```java
+public int findMaxSumOfSubArray(int[] numbers) {
+    if (numbers == null || numbers.length == 0) {
+        throw new RuntimeException("input invalid!");
+    }
+    // 1, -2, 3, 10, -4, 7, 2, -5
+    int[] dp = new int[numbers.length + 1];
+    dp[0] = 0;
+    for (int i = 0; i < numbers.length; i++) {
+        if (i == 0 || dp[i] <= 0) {
+            dp[i + 1] = numbers[i];
+        } else {
+            dp[i + 1] = dp[i] + numbers[i];
+        }
+    }
+    return Arrays.stream(dp).max().getAsInt();
+}
+```
+
