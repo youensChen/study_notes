@@ -145,6 +145,15 @@ A inner join B，谁有索引谁为被驱动表（MySql自动选择）
 
 ![image-20210321162520531](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/image-20210321162520531.png)
 
+#### Union
+
+```
+Union：对两个结果集进行并集操作，不包括重复行，同时进行默认规则的排序；
+Union All：对两个结果集进行并集操作，包括重复行，不进行排序；
+Intersect：对两个结果集进行交集操作，不包括重复行，同时进行默认规则的排序；
+Minus：对两个结果集进行差操作，不包括重复行，同时进行默认规则的排序。
+```
+
 #### 覆盖索引（不要select *）
 
 ```sql
