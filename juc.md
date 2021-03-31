@@ -826,3 +826,105 @@ class MyCache {
 3 读取完成3
 ```
 
+# BlockQueue阻塞队列
+
+## 概念
+
+![image-20210331192249038](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331192249.png)
+
+
+
+## 好处
+
+![image-20210331192446859](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331192447.png)
+
+==不在需要手动判断标志位，await、signal==
+
+## 实现类
+
+![image-20210331194348790](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331194348.png)
+
+![image-20210331194443374](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331194443.png)
+
+## 常用方法
+
+![image-20210331194904689](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331194904.png)
+
+## 测试
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        BlockingQueue<String> queue = new ArrayBlockingQueue<>(5);
+        Random random = new Random();
+        for (int i = 0; i < 2; i++) { //生产者2个
+            new Thread(() -> {
+                for (int j = 0; j < 10; j++) {
+                    try {
+                        System.out.println(Thread.currentThread().getName()+"生产了:"+j);
+                        queue.put(j+"");
+                        TimeUnit.SECONDS.sleep(random.nextInt(3));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, String.valueOf(i)).start();
+        }
+
+        for (int i = 2; i < 12; i++) { //消费者10个
+            new Thread(() -> {
+                for (int j = 0; j < 2; j++) {
+                    try {
+                        System.out.println(Thread.currentThread().getName()+"消费了："+queue.take());
+                        TimeUnit.SECONDS.sleep(random.nextInt(2));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, String.valueOf(i)).start();
+        }
+    }
+}
+
+1生产了:0
+0生产了:0
+2消费了：0
+3消费了：0
+1生产了:1
+6消费了：1
+0生产了:1
+7消费了：1
+1生产了:2
+4消费了：2
+0生产了:2
+1生产了:3
+3消费了：2
+2消费了：3
+0生产了:3
+1生产了:4
+10消费了：3
+0生产了:4
+11消费了：4
+1生产了:5
+6消费了：4
+5消费了：5
+1生产了:6
+8消费了：6
+1生产了:7
+9消费了：7
+1生产了:8
+0生产了:5
+7消费了：8
+1生产了:9
+4消费了：5
+5消费了：9
+0生产了:6
+8消费了：6
+0生产了:7
+10消费了：7
+0生产了:8
+0生产了:9
+11消费了：8
+9消费了：9
+```
+
