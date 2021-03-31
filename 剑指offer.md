@@ -2440,7 +2440,16 @@ public static int findNthDigit(int n) {
 
 ## 把数组排查最小的数-P227
 
+```
+输入一个正整数数组，打印数组里所有数字拼接出来最小的数。
+例如{3,32,321} ，打印321323
+```
 
-
-
+```java
+public static void printMinNumber(Integer[] numbers) {
+        List<Integer> nums = new ArrayList<>(Arrays.asList(numbers));
+        nums.stream().map(String::valueOf).sorted((x, y) -> x.concat(y).compareTo(y.concat(x))
+        ).forEach(System.out::print);
+}
+```
 
