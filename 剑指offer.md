@@ -2351,3 +2351,96 @@ public int findMaxSumOfSubArray(int[] numbers) {
 }
 ```
 
+
+
+## 1~n整数中1出现的次数-P221
+
+```
+输入一个整数n，求1~n这n个整数的十进制表示中出1出现的次数。
+例如，输入了12，则包含1的数字有1,10,11,12,所以1一共出现了5次。
+```
+
+![image-20210331091839767](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331091846.png)
+
+![image-20210331091855507](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331091855.png)
+
+```java
+public static int count(int n) {
+        if (n < 1) {
+            return 0;
+        }
+
+        int count = 0; //计数器
+        int base = 1;  //从个位数开始基数为1，十位数的基数为10...
+        int round = n;
+
+        while (round > 0) {
+            //表示十进制的每一位，从各位数开始
+            int weight = round % 10;
+
+            //表示每一次weight位上的数要从0-9变换多少个轮回
+            round = round / 10;
+
+            //当weight位上为0的时候
+            count = count + round * base;
+
+            if (weight == 1) {
+                count = count + (n % base) + 1;
+            } else if (weight > 1) {
+                count = count + base;
+            }
+            //下一位的基数为前一位基数的十倍
+            base = base * 10;
+        }
+        return count;
+    }
+```
+
+
+
+## 数字序列中某一位出现的数字-P225
+
+```
+数字以0123456789101112131415……的格式序列化到一个字符序列中。从0开始计数，第5位是5，第13位是1，第19位是4.求任意第n位对应的数字。
+```
+
+![image-20210331105833478](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331105833.png)
+
+
+
+```java
+public static int findNthDigit(int n) {
+        if (n < 0) {
+            return -1;
+        }
+        if (n == 0) {
+            return 0;
+        }
+        //数字的长度为len; 从长度为1的数字开始, 也就是从个位数开始
+        int len = 1;
+        //长度为len的数字有count个
+        long count = 9;
+        //长度为len的第一个数字
+        int start = 1;
+        //确定第n位对应的数字的长度
+        while (n > len * count) {
+            n -= len * count; 
+            //update
+            len++;
+            start = start * 10;
+            count = count * 10;
+        }
+        //确定第n位对应的数字是哪个长度为len的数字
+        start = start + (n % len == 0 ? n / len - 1 : n / len);
+        //取出该数字的第(n-1)%len位
+        String s = Integer.toString(start);
+        return Character.getNumericValue(s.charAt(n % len == 0 ? len - 1 : n % len - 1));
+    }
+```
+
+## 把数组排查最小的数-P227
+
+
+
+
+
