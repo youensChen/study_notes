@@ -74,9 +74,11 @@ class Ticket {
 
 ![image-20210330105739709](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331142959.png)
 
-## 线程之间通信
+## 线程之间通信（生产/消费）
 
 ![image-20210330124059191](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210330124059.png)
+
+### 传统写法
 
 ```java
 public class Main {
@@ -119,7 +121,6 @@ public class Main {
 
 
         new Thread(() -> {
-
             for (int i = 0; i < 10; i++) {
                 try {
                     Thread.sleep(200);
@@ -129,7 +130,6 @@ public class Main {
                 }
             }
         }, "D").start();
-
 
     }
 }
@@ -159,6 +159,15 @@ class AirConditioner {
         this.notify();
     }
 
+
+    
+```
+
+### JUC写法
+
+==Lock==
+
+```java
 // JUC写法
     
 class AirConditioner {
@@ -201,26 +210,24 @@ class AirConditioner {
         }
     }
 }
-    
 ```
+
+
 
 ## JUC的优点
 
 ![image-20210330140351964](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210330140352.png)
 
-```txt
-Lock和Condition配合能实现精准的唤醒和控制，不会再造成一次性唤醒多个线程而造成的多线程抢夺资源的现象。能实现线程
-A -> B -> C -> D的线程控制
-```
+==Lock和Condition配合能实现精准的唤醒和控制，不会再造成一次性唤醒多个线程而造成的多线程抢夺资源的现象。能实现线程
+A -> B -> C -> D的线程控制==
 
 
 
 ```java
 class ShareResouce {
-    // 标志位  1-a, 2-b, 3-c
-    private int num = 1;
+    private int num = 1; // 标志位  1-a, 2-b, 3-c
     private Lock lock = new ReentrantLock();
-    private Condition condition1 = lock.newCondition();
+    private Condition condition1 = lock.newCondition(); //相当于3把锁
     private Condition condition2 = lock.newCondition();
     private Condition condition3 = lock.newCondition();
 
@@ -287,6 +294,8 @@ class ShareResouce {
 ```
 
 # 锁
+
+## 8种问题
 
 ```java
 public class Main {
@@ -438,11 +447,382 @@ Set<String> set = new CopyOnWriteArraySet<>();
 
 #### 解决方案
 
+```java
+// 1、
+Map<String, String> strings = Collections.synchronizedMap(new HashMap<>());
+
+// 2、
+Map<String, String> strings = new ConcurrentHashMap<>();
 ```
 
+
+
+# 多线程的四种方式
+
+## 继承Thread
+
+```java
+class MyThread extends Thread{
+    
+}
 ```
 
 
 
+## 实现Runnable接口
 
+```java
+class MyThread implements Runnable{
+    @Override
+    public void run() {
+        
+    }
+}
+```
+
+
+
+## 实现Callable接口
+
+```java
+public class Main {
+    public static void main(String[] args) throws Exception {
+        // new Thread()没有传入Callable接口的构造函数
+        FutureTask futureTask = new FutureTask(new MyThread()); // FutureTask实现了Runnable接口
+        new Thread(futureTask, "A").start();
+        new Thread(futureTask, "B").start(); //并不会再次执行
+
+        System.out.println(2*2);// 主线程做其他事
+        
+        // 会等待线程执行完获得返回值，在期间可以去做其他事情，对等线程计算完复杂问题后会有返回值
+        System.out.println(futureTask.get()); //get一般放在最后
+        
+    }
+
+}
+class MyThread implements Callable<Integer> {
+
+    @Override
+    public Integer call() throws Exception {
+        System.out.println("come in here");
+        try { TimeUnit.SECONDS.sleep(2); } catch (InterruptedException e) { e.printStackTrace(); }
+        return 1024;
+    }
+}
+```
+
+![image-20210331150218209](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331150218.png)
+
+
+
+## 线程池
+
+
+
+# JUC辅助类
+
+## CountDownLatch倒数器
+
+**==java.util.concurrent.CountDownLatch;==**
+
+### 问题
+
+```java
+public static void main(String[] args) throws Exception {
+        for (int i = 0; i < 6; i++) {
+            new Thread(() -> {
+                System.out.println(Thread.currentThread().getName()+"\t离开教室");
+            }, String.valueOf(i)).start();
+        }
+        //需求，main线程要在其他线程执行完后才退出
+        System.out.println(Thread.currentThread().getName()+"\t班长关门");
+    }
+0	离开教室
+main	班长关门
+3	离开教室
+4	离开教室
+1	离开教室
+2	离开教室
+5	离开教室
+```
+
+### 解决方式	
+
+```java
+public static void main(String[] args) throws Exception {
+        //相当于计数器
+        CountDownLatch countDownLatch = new CountDownLatch(6);//计数器初始值为6
+        for (int i = 0; i < 6; i++) {
+            new Thread(() -> {
+                System.out.println(Thread.currentThread().getName()+"\t离开教室");
+                countDownLatch.countDown(); //计数器减1
+            }, String.valueOf(i)).start();
+        }
+        //需求，main线程要在其他线程执行完后才退出
+        countDownLatch.await(); //等待计数器为0
+        System.out.println(Thread.currentThread().getName()+"\t离开教室");
+    }
+0	离开教室
+3	离开教室
+1	离开教室
+2	离开教室
+5	离开教室
+4	离开教室
+main	离开教室
+```
+
+## CyclicBarrier循环栅栏
+
+**==java.util.concurrent.CyclicBarrier;==**
+
+```java
+//类似加数器，加到一定数量后才会执行某个线程
+
+public static void main(String[] args){
+        //相当于加数器
+        CyclicBarrier cyclicBarrier = new CyclicBarrier(7, ()-> System.out.println("集齐7颗龙珠，召唤神龙"));
+        for (int i = 1; i < 8; i++) {
+            int finalI = i; // lambda表达式要用final变量
+            new Thread(() -> {
+                System.out.println(Thread.currentThread().getName()+"\t找到第"+ finalI +"颗龙珠");
+                try {
+                    cyclicBarrier.await();// 等待集齐龙珠
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+            }, String.valueOf(i)).start();
+        }
+    }
+1	找到第1颗龙珠
+4	找到第4颗龙珠
+6	找到第6颗龙珠
+2	找到第2颗龙珠
+3	找到第3颗龙珠
+5	找到第5颗龙珠
+7	找到第7颗龙珠
+集齐7颗龙珠，召唤神龙
+
+```
+
+
+
+## Semaphore信号量
+
+![image-20210331162255775](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331162255.png)
+
+**==java.util.concurrent.Semaphore;==**
+
+```java
+public static void main(String[] args){
+        // 模拟7部车抢占3个车位
+        Semaphore semaphore = new Semaphore(3); // 3个车位
+        for (int i = 1; i <= 7; i++) {
+            new Thread(() -> {
+                try {
+                    semaphore.acquire(); // 抢到车位
+                    System.out.println(Thread.currentThread().getName()+"\t抢到了车位");
+                    TimeUnit.SECONDS.sleep(new Random().nextInt(4)); //随机停车0~3秒
+                    System.out.println(Thread.currentThread().getName()+"\t离开了车位");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    semaphore.release(); // 释放车位
+                }
+            }, String.valueOf(i)).start();
+        }
+    }
+
+
+2	抢到了车位
+3	抢到了车位
+1	抢到了车位
+3	离开了车位
+4	抢到了车位
+1	离开了车位
+5	抢到了车位
+5	离开了车位
+4	离开了车位
+7	抢到了车位
+2	离开了车位
+6	抢到了车位
+6	离开了车位
+7	离开了车位
+```
+
+
+
+# ReadWriteLock
+
+## ReadWriteLock相较于Lock的优点
+
+![image-20210331164457750](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331164457.png)
+
+==Lock上述三种情况都不能共存==
+
+## 出现的问题
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        MyCache myCache = new MyCache();
+
+        for (int i = 0; i < 4; i++) {
+            int finalI = i;
+            new Thread(() -> {
+                myCache.put(finalI + "", finalI + "");
+            }, String.valueOf(i)).start();
+        }
+
+        for (int i = 0; i < 4; i++) {
+            int finalI = i;
+            new Thread(() -> {
+                myCache.get(finalI + "");
+            }, String.valueOf(i)).start();
+        }
+    }
+}
+
+class MyCache {
+    private volatile Map<String, Object> map = new HashMap<>();
+
+    public void put(String key, Object value) {
+        System.out.println(Thread.currentThread().getName() + " ----开始写入");
+        //网络拥堵
+        try {
+            TimeUnit.MILLISECONDS.sleep(150);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        map.put(key, value);
+        System.out.println(Thread.currentThread().getName() + " ----写入完成");
+    }
+
+    public void get(String key) {
+        System.out.println(Thread.currentThread().getName() + " 开始读取");
+        //网络拥堵
+        try {
+            TimeUnit.MILLISECONDS.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        Object res = map.get(key);
+        System.out.println(Thread.currentThread().getName() + " 读取完成" + res);
+    }
+}
+//不加锁
+0 ----开始写入 // 一个线程写入时，其他线程又读又写，违反数据一致性
+3 ----开始写入
+1 ----开始写入
+2 ----开始写入
+0 开始读取
+1 开始读取
+2 开始读取
+3 开始读取
+1 读取完成null
+3 读取完成null
+2 读取完成null
+0 读取完成null
+0 ----写入完成
+1 ----写入完成
+3 ----写入完成
+2 ----写入完成
+    
+// put与get添加synchronized或者lock，虽然避免了问题，但是读取数据时也加锁了，不允许其他线程读取。
+0 ----开始写入
+0 ----写入完成
+3 开始读取
+3 读取完成null
+2 开始读取
+2 读取完成null
+1 开始读取
+1 读取完成null
+0 开始读取
+0 读取完成0
+3 ----开始写入
+3 ----写入完成
+2 ----开始写入
+2 ----写入完成
+1 ----开始写入
+1 ----写入完成
+```
+
+## 解决方法
+
+==ReadWriteLock既保证了数据一致性，又提高了并发性能（多个线程可同时读）==
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        MyCache myCache = new MyCache();
+
+        for (int i = 0; i < 4; i++) {
+            int finalI = i;
+            new Thread(() -> {
+                myCache.put(finalI + "", finalI + "");
+            }, String.valueOf(i)).start();
+        }
+
+        for (int i = 0; i < 4; i++) {
+            int finalI = i;
+            new Thread(() -> {
+                myCache.get(finalI + "");
+            }, String.valueOf(i)).start();
+        }
+    }
+}
+
+class MyCache {
+    private volatile Map<String, Object> map = new HashMap<>();
+    private ReadWriteLock lock = new ReentrantReadWriteLock(); //默认不公平
+
+    public void put(String key, Object value) {
+        lock.writeLock().lock(); // 加写锁
+        try {
+            System.out.println(Thread.currentThread().getName() + " ----开始写入");
+            //网络拥堵
+            TimeUnit.MILLISECONDS.sleep(150);
+            map.put(key, value);
+            System.out.println(Thread.currentThread().getName() + " ----写入完成");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.writeLock().unlock();
+        }
+
+    }
+
+    public void get(String key) {
+        lock.readLock().lock();// 加读锁
+        try {
+            System.out.println(Thread.currentThread().getName() + " 开始读取");
+            //网络拥堵
+            TimeUnit.MILLISECONDS.sleep(100);
+            Object res = map.get(key);
+            System.out.println(Thread.currentThread().getName() + " 读取完成" + res);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+}
+1 ----开始写入 // 1线程开始写数据，此时其他线程不可以 读 也不可以 写
+1 ----写入完成
+0 ----开始写入
+0 ----写入完成
+2 ----开始写入
+2 ----写入完成
+3 ----开始写入
+3 ----写入完成
+1 开始读取 // 1线程开始 读 数据，此时其他线程也可以 读
+0 开始读取
+3 开始读取
+2 开始读取
+1 读取完成1
+0 读取完成0
+2 读取完成2
+3 读取完成3
+```
 
