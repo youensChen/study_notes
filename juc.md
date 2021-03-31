@@ -871,7 +871,7 @@ public class Main {
             }, String.valueOf(i)).start();
         }
 
-        for (int i = 2; i < 12; i++) { //消费者10个
+        for (int i = 2; i < 12; i++) { //消费者
             new Thread(() -> {
                 for (int j = 0; j < 2; j++) {
                     try {
@@ -926,5 +926,111 @@ public class Main {
 0生产了:9
 11消费了：8
 9消费了：9
+```
+
+
+
+# ThreadPool线程池
+
+![image-20210331214653024](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331214653.png)
+
+## 为什么使用线程池
+
+![image-20210331213313938](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331213314.png)
+
+## 三种线程池
+
+### FixedThreadPool
+
+```java
+public static void main(String[] args) {
+        // 执行长期任务性能好，线程池线程数固定
+        ExecutorService threadPool = Executors.newFixedThreadPool(5);
+        Random random = new Random();
+        try {
+            for (int i = 0; i < 10; i++) {
+                threadPool.execute(()->{
+                    System.out.println(Thread.currentThread().getName()+"占用线程");
+                    try { TimeUnit.SECONDS.sleep(random.nextInt(2)); } catch (InterruptedException e) { 							e.printStackTrace(); }
+                    System.out.println(Thread.currentThread().getName()+"离开线程");
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            threadPool.shutdown();
+        }
+    }
+```
+
+### SingleThreadExecutor
+
+```java
+public static void main(String[] args) {
+        // 一个任务一个任务地执行，线程池线程数只有一个
+        ExecutorService threadPool = Executors.newSingleThreadExecutor();
+        Random random = new Random();
+        try {
+            for (int i = 0; i < 10; i++) {
+                threadPool.execute(()->{
+                    System.out.println(Thread.currentThread().getName()+"占用线程");
+                    try { TimeUnit.SECONDS.sleep(random.nextInt(2)); } catch (InterruptedException e) { e.printStackTrace(); }
+                    System.out.println(Thread.currentThread().getName()+"离开线程");
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            threadPool.shutdown();
+        }
+    }
+```
+
+
+
+### CachedThreadPool
+
+![image-20210331220705413](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210331220705.png)
+
+```java
+public static void main(String[] args) {
+        // 线程池线程数有N个，可自动根据任务数量创建线程数
+        ExecutorService threadPool = Executors.newCachedThreadPool();
+        Random random = new Random();
+        try {
+            for (int i = 0; i < 10; i++) {
+                threadPool.execute(()->{
+                    System.out.println(Thread.currentThread().getName()+"占用线程");
+                    try { TimeUnit.SECONDS.sleep(random.nextInt(2)); } catch (InterruptedException e) { e.printStackTrace(); }
+                    System.out.println(Thread.currentThread().getName()+"离开线程");
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            threadPool.shutdown();
+        }
+    }
+
+pool-1-thread-1占用线程
+pool-1-thread-4占用线程
+pool-1-thread-6占用线程
+pool-1-thread-2占用线程
+pool-1-thread-3占用线程
+pool-1-thread-2离开线程
+pool-1-thread-8占用线程
+pool-1-thread-5占用线程
+pool-1-thread-6离开线程
+pool-1-thread-7占用线程
+pool-1-thread-3离开线程
+pool-1-thread-7离开线程
+pool-1-thread-9占用线程
+pool-1-thread-9离开线程
+pool-1-thread-10占用线程
+pool-1-thread-10离开线程
+pool-1-thread-8离开线程
+pool-1-thread-1离开线程
+pool-1-thread-5离开线程
+pool-1-thread-4离开线程
 ```
 
