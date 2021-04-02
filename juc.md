@@ -1129,11 +1129,124 @@ public static ExecutorService newCachedThreadPool() {
 
 ### 合理设置参数
 
+#### CPU密集型任务
+
+==如果任务是CPU密集型，则最大线程数maximum就是cpu核心数加1==
+
+
+
+#### IO密集型任务
+
+==CPU核心数 / 阻塞系数==
+
 
 
 
 
 ### 拒绝策略
+
+![image-20210402223456662](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402223503.png)
+
+#### AbortPolicy
+
+```java
+// 如果要同时执行的线程数大于maximumPoolsize + BlockedQueue.size，将会抛出异常
+// java.util.concurrent.RejectedExecutionException
+public class Main {
+    public static void main(String[] args) {
+        ExecutorService threadPool = new ThreadPoolExecutor(2,
+                5,
+                2L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingDeque<>(3),
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy()); // AbortPolicy
+        Random random = new Random();
+        try {
+            for (int i = 1; i <= 9; i++) {
+                threadPool.execute(() -> {
+                    System.out.println(Thread.currentThread().getName()+"\t办理业务");
+                    try { TimeUnit.SECONDS.sleep(random.nextInt(2)); } catch (InterruptedException e) { e.printStackTrace(); }
+
+                });
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            threadPool.shutdown();
+        }
+    }
+}
+
+pool-1-thread-1	办理业务
+pool-1-thread-4	办理业务
+pool-1-thread-3	办理业务
+pool-1-thread-2	办理业务
+pool-1-thread-5	办理业务
+pool-1-thread-3	办理业务
+pool-1-thread-4	办理业务
+pool-1-thread-1	办理业务
+java.util.concurrent.RejectedExecutionException: Task Main$$Lambda$1/1078694789@7ba4f24f rejected from java.util.concurrent.ThreadPoolExecutor@3b9a45b3[Running, pool size = 5, active threads = 4, queued tasks = 0, completed tasks = 4]
+	at java.util.concurrent.ThreadPoolExecutor$AbortPolicy.rejectedExecution(ThreadPoolExecutor.java:2047)
+	at java.util.concurrent.ThreadPoolExecutor.reject(ThreadPoolExecutor.java:823)
+	at java.util.concurrent.ThreadPoolExecutor.execute(ThreadPoolExecutor.java:1369)
+	at Main.main(Main.java:21)
+```
+
+
+
+
+
+#### CallerRunsPolicy
+
+```java
+
+ExecutorService threadPool = new ThreadPoolExecutor(2,
+                                                    5,
+                                                    2L,
+                                                    TimeUnit.SECONDS,
+                                                    new LinkedBlockingDeque<>(3),
+                                                    Executors.defaultThreadFactory(),
+                                                    new ThreadPoolExecutor.CallerRunsPolicy()); // CallerRunsPolicy
+pool-1-thread-1	办理业务
+pool-1-thread-3	办理业务
+main	办理业务
+pool-1-thread-2	办理业务
+pool-1-thread-4	办理业务
+pool-1-thread-1	办理业务
+pool-1-thread-5	办理业务
+pool-1-thread-4	办理业务
+pool-1-thread-4	办理业务
+```
+
+
+
+#### DiscardOldestPolicy
+
+```java
+ExecutorService threadPool = new ThreadPoolExecutor(2,
+                5,
+                2L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingDeque<>(3),
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.DiscardOldestPolicy());
+```
+
+
+
+#### DiscardPolicy
+
+```java
+ExecutorService threadPool = new ThreadPoolExecutor(2,
+                5,
+                2L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingDeque<>(3),
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.DiscardPolicy());
+```
 
 
 
@@ -1141,7 +1254,7 @@ public static ExecutorService newCachedThreadPool() {
 
 ## 如何选择线程池
 
-哪个都不用，使用自定义的
+==哪个都不用，使用自定义的==
 
 ![image-20210402121257166](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402121257.png)
 
