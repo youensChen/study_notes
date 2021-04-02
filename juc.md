@@ -1034,3 +1034,119 @@ pool-1-thread-5离开线程
 pool-1-thread-4离开线程
 ```
 
+## 底层原理
+
+三种线程池的获得方法其实都是调用一个==ThreadPoolExecutor==构造函数
+
+```java
+// FixedThreadPool
+/* @param nThreads the number of threads in the pool
+ * @return the newly created thread pool
+ * @throws IllegalArgumentException if {@code nThreads <= 0}
+ */
+ public static ExecutorService newFixedThreadPool(int nThreads) {
+        return new ThreadPoolExecutor(nThreads, nThreads,
+                                      0L, TimeUnit.MILLISECONDS,
+                                      new LinkedBlockingQueue<Runnable>());
+    }
+
+// SingleThreadPool
+public static ExecutorService newSingleThreadExecutor() {
+        return new FinalizableDelegatedExecutorService
+            (new ThreadPoolExecutor(1, 1,
+                                    0L, TimeUnit.MILLISECONDS,
+                                    new LinkedBlockingQueue<Runnable>()));
+    }
+
+// CachedThreadPool
+public static ExecutorService newCachedThreadPool() {
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                      60L, TimeUnit.SECONDS,
+                                      new SynchronousQueue<Runnable>());
+    }
+```
+
+### ThreadPoolExecutor构造函数
+
+```java
+ /**
+     * Creates a new {@code ThreadPoolExecutor} with the given initial
+     * parameters.
+     *
+     * @param corePoolSize the number of threads to keep in the pool, even
+     *        if they are idle, unless {@code allowCoreThreadTimeOut} is set
+     * @param maximumPoolSize the maximum number of threads to allow in the
+     *        pool
+     * @param keepAliveTime when the number of threads is greater than
+     *        the core, this is the maximum time that excess idle threads
+     *        will wait for new tasks before terminating.
+     * @param unit the time unit for the {@code keepAliveTime} argument
+     * @param workQueue the queue to use for holding tasks before they are
+     *        executed.  This queue will hold only the {@code Runnable}
+     *        tasks submitted by the {@code execute} method.
+     * @param threadFactory the factory to use when the executor
+     *        creates a new thread
+     * @param handler the handler to use when execution is blocked
+     *        because the thread bounds and queue capacities are reached
+     * @throws IllegalArgumentException if one of the following holds:<br>
+     *         {@code corePoolSize < 0}<br>
+     *         {@code keepAliveTime < 0}<br>
+     *         {@code maximumPoolSize <= 0}<br>
+     *         {@code maximumPoolSize < corePoolSize}
+     * @throws NullPointerException if {@code workQueue}
+     *         or {@code threadFactory} or {@code handler} is null
+     */
+    public ThreadPoolExecutor(int corePoolSize,// 线程池中的常驻核心线程数，可为0
+                              int maximumPoolSize,// 线程池中能够容纳同时执行的最大线程数，必须大于等于1
+                              long keepAliveTime, // 多余的空闲线程的存活时间，当线程池中的线程数量超过maximumPoolSize												  时，当空闲时间达到keepAliveTime时，多余的线程会被销毁知道线程池中的												   线程数量达到corePoolSize为止
+                              TimeUnit unit, // keepAliveTime的时间单位
+                              BlockingQueue<Runnable> workQueue, // 任务队列，被提交但未被执行的队列
+                              ThreadFactory threadFactory, // 表示生成线程池中工作线程的线程工厂，用于创建线程，一般默认
+                              RejectedExecutionHandler handler) { // 拒绝策略，表示当workQueue满了，并且工作线程大于等															于maximumPoolSize时，如何拒绝请求来执行的Runnable的策略
+        if (corePoolSize < 0 ||
+            maximumPoolSize <= 0 ||
+            maximumPoolSize < corePoolSize ||
+            keepAliveTime < 0)
+            throw new IllegalArgumentException();
+        if (workQueue == null || threadFactory == null || handler == null)
+            throw new NullPointerException();
+        this.corePoolSize = corePoolSize;
+        this.maximumPoolSize = maximumPoolSize;
+        this.workQueue = workQueue;
+        this.keepAliveTime = unit.toNanos(keepAliveTime);
+        this.threadFactory = threadFactory;
+        this.handler = handler;
+    }
+```
+
+### 工作原理
+
+![image-20210402114545799](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402114546.png)
+
+![image-20210402114712677](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402114712.png)
+
+
+
+### 合理设置参数
+
+
+
+
+
+### 拒绝策略
+
+
+
+
+
+## 如何选择线程池
+
+哪个都不用，使用自定义的
+
+![image-20210402121257166](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402121257.png)
+
+![image-20210402121314244](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402121314.png)
+
+![image-20210402121330345](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402121330.png)
+
+### 自定义线程池
