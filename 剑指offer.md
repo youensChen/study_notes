@@ -2204,7 +2204,7 @@ public class Solution {
 
 ​	
 
-## 数据流中的中位数-P214
+### 数据流中的中位数-P214
 
 ```
 如果数据流中读出了奇数个数值，那么中位数就是排序后的中间的数值；如果数据流中读出了偶数个数值，那么中位数就是排序后中间两个数的平均值。
@@ -2297,7 +2297,7 @@ public class Solution {
 }
 ```
 
-## 连续子数组的最大和-P218
+### 连续子数组的最大和-P218
 
 ```
 输入一个整型数组。求所有子数组的和的最大值。要求时间复杂度O(n)
@@ -2353,7 +2353,7 @@ public int findMaxSumOfSubArray(int[] numbers) {
 
 
 
-## 1~n整数中1出现的次数-P221
+### 1~n整数中1出现的次数-P221
 
 ```
 输入一个整数n，求1~n这n个整数的十进制表示中出1出现的次数。
@@ -2398,7 +2398,7 @@ public static int count(int n) {
 
 
 
-## 数字序列中某一位出现的数字-P225
+### 数字序列中某一位出现的数字-P225
 
 ```
 数字以0123456789101112131415……的格式序列化到一个字符序列中。从0开始计数，第5位是5，第13位是1，第19位是4.求任意第n位对应的数字。
@@ -2438,7 +2438,7 @@ public static int findNthDigit(int n) {
     }
 ```
 
-## 把数组排查最小的数-P227
+### 把数组排查最小的数-P227
 
 ```
 输入一个正整数数组，打印数组里所有数字拼接出来最小的数。
@@ -2450,6 +2450,75 @@ public static void printMinNumber(Integer[] numbers) {
         List<Integer> nums = new ArrayList<>(Arrays.asList(numbers));
         nums.stream().map(String::valueOf).sorted((x, y) -> x.concat(y).compareTo(y.concat(x))
         ).forEach(System.out::print);
+}
+```
+
+### 把数字翻译成数字-P231
+
+```
+给定一个数字，按照规则把它翻译成字符串，0翻译为a，1翻译为b。。。25翻译为z。一个数字可能有多种翻译。如1228可翻译为bccfi、bwfi、bczi、mcfi、mzi。请计算一个数字有多少种不同的翻译方法。
+```
+
+
+
+```java
+public class Solution {
+    public int getTranslationCount(int number) {
+        if (number < 0)
+            return 0;
+        if (number == 1)
+            return 1;
+        return getCount(Integer.toString(number));
+    }
+
+    //动态规划，从右到左计算。
+    //f(r-2) = f(r-1)+g(r-2,r-1)*f(r);
+    //如果r-2，r-1能够翻译成字符，则g(r-2,r-1)=1，否则为0
+    private int getCount(String number) {
+        int f1 = 0, f2 = 1, g = 0;
+        int temp;
+        for (int i = number.length() - 2; i >= 0; i--) {
+            if (Integer.parseInt(number.charAt(i) + "" + number.charAt(i + 1)) < 26)
+                g = 1;
+            else
+                g = 0;
+            temp = f2;
+            f2 = f2 + g * f1;
+            f1 = temp;
+        }
+        return f2;
+    }
+}
+```
+
+### 礼物的最大值-P233
+
+![image-20210402100147266](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402100154.png)
+
+```java
+public class Solution {
+    public static int getMaxValue(int[] values, int rows, int cols) {
+        if (values == null || values.length == 0 || values.length < rows * cols) {
+            return 0;
+        }
+        int[][] dp = new int[rows + 1][cols + 1];
+        // base case
+        for (int i = 0; i <= rows; i++) {
+            dp[i][0] = 0;
+
+        }
+        for (int i = 0; i <= cols; i++) {
+            dp[0][i] = 0;
+        }
+        
+        
+        for (int i = 1; i <= rows ; i++) {
+            for (int j = 1; j <= cols ; j++) {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]) + values[(i - 1) * cols + j - 1];
+            }
+        }
+        return dp[rows][cols];
+    }
 }
 ```
 
