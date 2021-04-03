@@ -488,7 +488,7 @@ class MyThread implements Runnable{
 public class Main {
     public static void main(String[] args) throws Exception {
         // new Thread()没有传入Callable接口的构造函数
-        FutureTask futureTask = new FutureTask(new MyThread()); // FutureTask实现了Runnable接口
+        FutureTask futureTask = new FutureTask(new MyTask()); // FutureTask实现了Runnable接口
         new Thread(futureTask, "A").start();
         new Thread(futureTask, "B").start(); //并不会再次执行
 
@@ -500,7 +500,7 @@ public class Main {
     }
 
 }
-class MyThread implements Callable<Integer> {
+class MyTask implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
@@ -1263,3 +1263,135 @@ ExecutorService threadPool = new ThreadPoolExecutor(2,
 ![image-20210402121330345](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210402121330.png)
 
 ### 自定义线程池
+
+
+
+# 分支合并框架
+
+==分治+递归，不过是将分治的任务交给新的线程==
+
+ForkJoinPool
+
+ForkJoinTask
+
+RecursiveTask
+
+![image-20210403103341075](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210403103348.png)
+
+```java
+class MyTask extends RecursiveTask<Integer> {
+
+    private final Integer MIN_TASK = 10;
+    private int start;
+    private int end;
+    private int result;
+
+    public MyTask(int start, int end) {
+        this.start = start;
+        this.end = end;
+        this.result = 0;
+    }
+
+    @Override
+    protected Integer compute() {
+        if ((end - start) < MIN_TASK) { // 子任务小于10不再分治递归
+            for (int i = start; i <= end; i++) {
+                result += i;
+            }
+        } else {
+            int mid = (start + end) / 2;
+            MyTask myTask1 = new MyTask(start, mid); // 分治
+            MyTask myTask2 = new MyTask(mid + 1, end);
+            myTask1.fork(); // 交给对等线程
+            myTask2.fork();
+            result = myTask1.join() + myTask2.join(); // 递归
+        }
+        return result;
+    }
+}
+
+public class Main {
+   public static void main(String[] args) throws Exception {
+        MyTask myTask = new MyTask(0, 100);
+        ForkJoinPool threadPool = new ForkJoinPool();
+        ForkJoinTask<Integer> submit = threadPool.submit(myTask);
+        System.out.println(submit.get());
+        threadPool.shutdown();
+    }
+
+}
+```
+
+# 异步回调
+
+## 无返回值异步回调
+
+```java
+public static void main(String[] args) throws Exception {
+        // 开启新线程执行任务，无返回值
+        CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(() ->
+                System.out.println(Thread.currentThread().getName() + "没有返回值，update sql ok"));
+        // Waits if necessary for this future to complete, and then returns its result.
+        // completableFuture.get(); 返回值为null
+}
+// 输出
+ForkJoinPool.commonPool-worker-1没有返回值，update sql ok
+```
+
+## 有返回值异步回调
+
+### 无异常
+
+```java
+public static void main(String[] args) throws Exception {
+        CompletableFuture<Integer> completableFuture = CompletableFuture.supplyAsync(() -> {// supplyAsync
+            System.out.println(Thread.currentThread().getName() + "\t执行任务");
+            return 1024;// get()返回值
+        });
+        System.out.println(completableFuture.whenComplete((t, u) -> {
+            System.out.println("u: " + u);
+            System.out.println("t: " + t);
+
+        }).exceptionally(f -> {
+            System.out.println(f.getMessage());
+            return 404;// get()返回值
+        }).get());
+
+    }
+//输出
+ForkJoinPool.commonPool-worker-1	执行任务
+u: null
+t: 1024
+1024
+```
+
+
+
+### 有异常
+
+```java
+public static void main(String[] args) throws Exception {
+        CompletableFuture<Integer> completableFuture = CompletableFuture.supplyAsync(() -> {// supplyAsync
+            System.out.println(Thread.currentThread().getName() + "\t执行任务");
+            System.out.println(1024 / 0);
+            return 1024;  // get()返回值
+        });
+        System.out.println(completableFuture.whenComplete((t, u) -> {
+            System.out.println("u: " + u);
+            System.out.println("t: " + t);
+
+        }).exceptionally(f -> {
+            System.out.println(f.getMessage());
+            return 404; // get()返回值
+        }).get());
+
+    }
+
+// 输出
+ForkJoinPool.commonPool-worker-1	执行任务
+u: java.util.concurrent.CompletionException: java.lang.ArithmeticException: / by zero
+t: null
+java.lang.ArithmeticException: / by zero
+404
+```
+
