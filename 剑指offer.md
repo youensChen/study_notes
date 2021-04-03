@@ -2522,3 +2522,140 @@ public class Solution {
 }
 ```
 
+
+
+### 最长不含重复字符串的子字符串-P236
+
+```
+从一个字符串中找出一个人最长的不包含重复字串的子字符串，计算该子字符串的长度。
+如字符串arabcacfr，最长的不含重复字符的子字符串的长度是acfr，长度为4.
+```
+
+```java
+/**
+ * 主要思路：使用动态规划，记录当前字符之前的最长非重复子字符串长度f(i-1)，其中i为当前字符的位置。每次遍历当前字符时，分两种情况：
+ *
+ * 1）若当前字符第一次出现，则最长非重复子字符串长度f(i) = f(i-1)+1。
+ * 2）若当前字符不是第一次出现，则首先计算当前字符与它上次出现位置之间的距离d。
+ *
+ *   a. 若d大于f(i-1)：即说明前一个非重复子字符串中没有包含当前字符，则可以添加当前字符到前一个非重复子字符串中，所以，f(i) = f(i-1)+1。
+ *   b. 若d小于或等于f(i-1)：即说明前一个非重复子字符串中已经包含当前字符，则不可以添加当前字符，所以，f(i) = d。
+ *
+ * 关键点：动态规划，两个重复字符的距离
+ */
+
+public class Solution {
+    public static int findLongestSubstringLength(String str) {
+        if (str == null || str.length() == 0) {
+            return 0;
+        }
+        int maxLength = 0;
+        int curLength = 0;
+        int[] positions = new int[26];
+        // 字符位置初始化为-1，负数表示没出现过
+        Arrays.fill(positions, -1);
+
+        for (int i = 0; i < str.length(); i++) {
+            int curChar = str.charAt(i) - 'a';
+            int prePosition = positions[curChar];
+            //当前字符与它上次出现位置之间的距离
+            int distance = i - prePosition;
+            //当前字符第一次出现，或者前一个非重复子字符串中没有包含当前字符
+            if (prePosition < 0 || distance > curLength) {
+                curLength++;
+            } else {
+
+                //更新最长非重复子字符串的长度
+                if (curLength > maxLength) {
+                    maxLength = curLength;
+                }
+                // 当前长度更新为上一次出现的距离
+                curLength = distance;
+            }
+            //更新字符出现的位置
+            positions[curChar] = i;
+        }
+        return (maxLength > curLength) ? maxLength : curLength;
+    }
+}
+```
+
+
+
+## 时间效率与空间效率的平衡
+
+### 丑数-P240
+
+```java
+/**
+ * 由丑数的定义：丑数应该是另一个丑数乘以2、3或者5的结果（1除外）。
+ * 因此我们可以创建一个数组，里面的数字是排好序的丑数，每一个丑数都是前面的丑数乘以2、3或者5得到的。
+ * 直观的优化措施就是看我们能不能降低时间复杂度，即只在丑数上花时间，而不在非丑数上浪费时间。
+ * 故根据上面的丑数定义和思路，我们开辟O(n)的空间来得到时间复杂度为O(n）的算法。
+ */
+public class Solution {
+    public static int getUglyNumber(int index) {
+        if (index <= 0) {
+            return 0;
+        }
+        List<Integer> list = new ArrayList<Integer>();
+        list.add(1);
+        int m2 = 0, m3 = 0, m5 = 0, i2 = 0, i3 = 0, i5 = 0, min = 0;
+        while (list.size() < index) {
+            m2 = list.get(i2) * 2;
+            m3 = list.get(i3) * 3;
+            m5 = list.get(i5) * 5;
+            min = Math.min(m2, Math.min(m3, m5));
+            list.add(min);
+            if (min == m2) {
+                ++i2;
+            }
+            if (min == m3) {
+                ++i3;
+            }
+            if (min == m5) {
+                ++i5;
+            }
+        }
+        return list.get(index - 1);
+    }
+}
+```
+
+### 第一个只出现一次的字符
+
+```
+字符串中第一个只出现一次的字符。
+如abaccdeff，输出b。
+```
+
+```java
+// 利用哈希表可以容易计算出每个字符的个数，那么怎么取出第一个只出现一个的字符呢？
+// 再遍历一次！！
+public class Solution {
+    public static char findFirstNotRepeatedChar(String str) {
+        if (str == null || str.length() == 0) {
+            // '#'代表无重复字符
+            return '#';
+        }
+        Map<Character, Integer> map = new HashMap<>();
+        for (int i = 0; i < str.length(); i++) {
+            if(map.containsKey(str.charAt(i))){
+                map.put(str.charAt(i), 1 + map.get(str.charAt(i)));
+            }else {
+                map.put(str.charAt(i), 1 );
+            }
+        }
+        char res = '#';
+        for (int i = 0; i < str.length(); i++) {
+            if (map.get(str.charAt(i)) == 1) {
+                res = str.charAt(i);
+                break;
+            }
+        }
+        return res;
+    }
+}
+```
+
+### 数组中的逆序对-P249
