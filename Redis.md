@@ -1033,7 +1033,7 @@ OK
 OK
 127.0.0.1:6379> set k1 v1
 QUEUED
-127.0.0.1:6379> set k2 #错误的指令
+127.0.0.1:6379> set k2 # 错误的指令
 (error) ERR wrong number of arguments for 'set' command # 命令报错
 127.0.0.1:6379> set k3 v3
 QUEUED
