@@ -1171,11 +1171,11 @@ while (true) {
 
 单线程可以配合 Selector 完成对多个 Channel 可读写事件的监控，这称之为多路复用
 
-* 多路复用仅针对网络 IO、普通文件 IO 没法利用多路复用
+* 多路复用仅针对==网络 IO==，普通文件 IO 没法利用多路复用
 * 如果不用 Selector 的非阻塞模式，线程大部分时间都在做无用功，而 Selector 能够保证
-  * 有可连接事件时才去连接
-  * 有可读事件才去读取
-  * 有可写事件才去写入
+  * ==有可连接事件时才去连接==
+  * ==有可读事件才去读取==
+  * ==有可写事件才去写入==
     * 限于网络传输能力，Channel 未必时时可写，一旦 Channel 可写，会触发 Selector 的可写事件
 
 
@@ -1203,7 +1203,7 @@ end
 
 
 
-#### 创建
+#### 创建Selector
 
 ```java
 Selector selector = Selector.open();
@@ -1220,7 +1220,7 @@ channel.configureBlocking(false);
 SelectionKey key = channel.register(selector, 绑定事件);
 ```
 
-* channel 必须工作在非阻塞模式
+* channel 必须工作在==非阻塞==模式
 * FileChannel 没有非阻塞模式，因此不能配合 selector 一起使用
 * 绑定的事件类型可以有
   * connect - 客户端连接成功时触发
@@ -1373,28 +1373,33 @@ public class ChannelDemo6 {
                 Iterator<SelectionKey> iter = keys.iterator();
                 while (iter.hasNext()) {
                     SelectionKey key = iter.next();
+                    // 必须将事件移除
+                    iter.remove();
                     // 判断事件类型
                     if (key.isAcceptable()) {
                         ServerSocketChannel c = (ServerSocketChannel) key.channel();
                         // 必须处理
                         SocketChannel sc = c.accept();
                         sc.configureBlocking(false);
-                        sc.register(selector, SelectionKey.OP_READ);
+                        sc.register(selector, SelectionKey.OP_READ); 
                         log.debug("连接已建立: {}", sc);
                     } else if (key.isReadable()) {
-                        SocketChannel sc = (SocketChannel) key.channel();
-                        ByteBuffer buffer = ByteBuffer.allocate(128);
-                        int read = sc.read(buffer);
-                        if(read == -1) {
-                            key.cancel();
-                            sc.close();
+                        try { // 若客户端强行关闭了连接（客户端停机），channel.read()将会出异常
+                        SocketChannel channel = (SocketChannel) key.channel(); // 拿到发生事件的channel
+                        ByteBuffer byteBuffer = ByteBuffer.allocate(16);
+                        int read = channel.read(byteBuffer);//如果连接是正常断开，会返回-1。断开后，还会产生一个read事件
+                        if (read == -1) {
+                            key.cancel();// 不再监听该socketChannel
                         } else {
-                            buffer.flip();
-                            debug(buffer);
+                            byteBuffer.flip();
+                            debugRead(byteBuffer);
                         }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        // 事件必须被处理，连接已断开，所以可以把key取消掉(从 selector 的 keys 集合中真正删除，也就是取消						注册)
+                        key.cancel();// 不再监听该socketChannel
                     }
-                    // 处理完毕，必须将事件移除
-                    iter.remove();
+                    
                 }
             }
         } catch (IOException e) {
@@ -1491,7 +1496,7 @@ hell
 owor
 ld�
 �好
-
+你 字的3个字节被拆成了两半，无法成功decode
 ```
 
 为什么？
@@ -1502,13 +1507,31 @@ ld�
 
 ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155051.png)
 
-* 一种思路是固定消息长度，数据包大小一样，服务器按预定长度读取，缺点是浪费带宽
-* 另一种思路是按分隔符拆分，缺点是效率低
+![image-20210404222754928](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404222802.png)
+
+* 一种思路是固定消息长度，数据包大小一样，服务器按预定长度读取，缺点是==浪费带宽==和==浪费空间==
+* 另一种思路是按分隔符拆分，需要一个一个字节比对，缺点是==效率低==
 * TLV 格式，即 Type 类型、Length 长度、Value 数据，类型和长度已知的情况下，就可以方便获取消息大小，分配合适的 buffer，缺点是 buffer 需要提前分配，如果内容过大，则影响 server 吞吐量
   * Http 1.1 是 TLV 格式
   * Http 2.0 是 LTV 格式
 
+#### ByteBuffer容量不够出现的问题
 
+```java
+//客户端发送一个大于byteBuffer的容量(16)的消息
+sc.write(Charset.defaultCharset().encode("01234567890abcdef3333\n"));
+// 服务器只会输出：
++--------+-------------------- all ------------------------+----------------+
+position: [6], limit: [6]
+         +-------------------------------------------------+
+         |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
++--------+-------------------------------------------------+----------------+
+|00000000| 66 33 33 33 33 0a                               |f3333.          |
++--------+-------------------------------------------------+----------------+
+// 前面16个字节被抛弃了，原因是在前16个字节中，并没有遇到分隔符\n，split无法处理不服，而且byteBuffer是局部变量，当第二次去处理时，已经是一个新的byteBuffer，原来的数据已丢失。
+```
+
+==使用附件进行解决==
 
 ```mermaid
 sequenceDiagram 
@@ -1523,6 +1546,8 @@ b1 ->> b2: 拷贝 01234567890abcdef
 s ->> b2: 第二次 read 存入 3333\r
 b2 ->> b2: 01234567890abcdef3333\r
 ```
+
+
 
 服务器端
 
@@ -1574,16 +1599,24 @@ public static void main(String[] args) throws IOException {
                 SocketChannel sc = channel.accept();
                 sc.configureBlocking(false);
                 ByteBuffer buffer = ByteBuffer.allocate(16); // attachment
+                
+                
                 // 将一个 byteBuffer 作为附件关联到 selectionKey 上
                 SelectionKey scKey = sc.register(selector, 0, buffer);
+                
+                
                 scKey.interestOps(SelectionKey.OP_READ);
                 log.debug("{}", sc);
                 log.debug("scKey:{}", scKey);
             } else if (key.isReadable()) { // 如果是 read
                 try {
                     SocketChannel channel = (SocketChannel) key.channel(); // 拿到触发事件的channel
+                    
+                    
                     // 获取 selectionKey 上关联的附件
                     ByteBuffer buffer = (ByteBuffer) key.attachment();
+                    
+                    
                     int read = channel.read(buffer); // 如果是正常断开，read 的方法的返回值是 -1
                     if(read == -1) {
                         key.cancel();
