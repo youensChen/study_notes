@@ -175,6 +175,7 @@ public class Solution {
 
 ```java
 public class Solution {
+    // 正则表达式
     public String replaceBlankOne(String str){
         String res = str.replaceAll(" ", "%20");
         return res;
@@ -188,12 +189,12 @@ public class Solution {
             return "";
         }
         int count = 0;
-        for (int i = 0; i < str.length(); i++) {
+        for (int i = 0; i < str.length(); i++) {//计算空格数量
             if(str.charAt(i) == ' '){
                 count++;
             }
         }
-        if(count == 0) return str;
+        if(count == 0)  return str;
         char[] chars = new char[str.length() + count * 2];
         count = 0;
         for (int i = 0; i < str.length(); i++) {
@@ -378,9 +379,10 @@ public class Solution {
 
 ### 斐波那契数列-P74
 
-````java
-public class Solution {
-    // 递归，效率低且可能造成栈溢出
+#### 递归
+
+```java
+// 递归，效率低且可能造成栈溢出，可加一个记录表，使得计算树退化为链表
     public long fibonacciOne(int n){
         if(n <=0) {
             return 0L;
@@ -388,8 +390,49 @@ public class Solution {
         if(n==1){
             return 1L;
         }
-        return fibonacciOne(n - 1)+fibonacciOne(n-2);
+        return fibonacciOne(n - 1) + fibonacciOne(n-2);
     }
+```
+
+
+
+#### 递归+记录表
+
+```java
+ //递归+记录表
+    public long fibonacci(int n) {
+        if (n <= 0) {
+            return 0L;
+        }
+        if (n == 1) {
+            return 1L;
+        }
+        long[] array = new long[n];
+        array[0] = 0;
+        array[1] = 1;
+        Arrays.fill(array, -1);
+        return fibonacci(array, n - 1) + fibonacci(array, n - 2);
+    }
+
+    private long fibonacci(long[] array, int n) {
+        if (n <= 0) {
+            return 0L;
+        }
+        if (n == 1) {
+            return 1L;
+        }
+        return ((array[n - 1] != -1) ? (array[n - 1]) : (array[n - 1] = fibonacci(array, n - 1))) +
+                ((array[n - 2] != -1) ? (array[n - 2]) : (array[n - 2] = fibonacci(array, n - 2)));
+    }
+```
+
+
+
+#### 动态规划
+
+````java
+public class Solution {
+   
     // 循环，效率高
     public long fibonacciTwo(int n){
         if(n <=0) {
@@ -430,10 +473,10 @@ public void quickSort(int[] array, int left, int right) {
         int i = left;
         int j = right;
         while (i < j) {
-            while (array[j] >= base && i < j) {
+            while (array[j] >= base && i < j) { //找到一个比base小的数
                 j--;
             }
-            while (array[i] <= base && i < j) {
+            while (array[i] <= base && i < j) { //找到一个比base大的数
                 i++;
             }
             if (i < j) {
@@ -499,10 +542,10 @@ public int findMin(int[] array) {
                 left = mid;
             } else if(array[mid] < array[right]) {
                 right = mid;
-            }else {// 解决特例 {1,0,1,1,1,1}或者{1,1,1,0,1}
+            }else {//array[mid]==array[right]， 解决特例 {1,0,1,1,1,1}或者{1,1,1,0,1} 
                 left++;
             }
-            if (right - 1 == left) { // 解决特例 {1,0,1,1,1,1}或者{1,1,1,0,1}
+            if (right - 1 == left) {
                 break;
             }
         }
@@ -572,8 +615,8 @@ public class Solution {
 ### 机器人运动范围-P92
 
 ```txt
-地上有m行n列的方格，机器人从（0,0）开始移动，可向四个方向移动一格，但是不能进行坐标和列坐标大于k的格子。
-例k=18，能进入（35,37），因为3+5+7+3=19，但是不能进入（35,38）。
+地上有m行n列的方格，机器人从（0,0）开始移动，可向四个方向移动一格，但是不能进入行坐标和列坐标各位之和大于k的格子。求机器人可走进的格子数。
+例k=18，能进入（35,37），因为3+5+7+3=18，但是不能进入（35,38）。
 ```
 
 类似上述例子
@@ -646,7 +689,7 @@ public class Solution {
 
         for (int i = 4; i <= len; i++) {
             max = 0;
-            for (int j = 1; j <= i / 2 ; j++) {
+            for (int j = 1; j <= i / 2 ; j++) {// 长度为 i 的绳子的所有剪法
                 int temp = dp[j] * dp[i - j];
                 if (max < temp) {
                     max = temp;
@@ -677,7 +720,7 @@ public int maxProductAfterCuttingTwo(int len) {
             return 2;
         }
         int timesOf3 = len / 3;  // 剪3的次数
-        if (len - timesOf3 * 3 == 1) { //长度为4是，应该剪为2*2
+        if (len - timesOf3 * 3 == 1) { //剩下的绳子长度为4是，应该剪为2*2
             timesOf3 -= 1;
         }
         int timesOf2 = (len - timesOf3 * 3) / 2;
@@ -781,13 +824,12 @@ public class Solution {
     public boolean Increment(int[] number){                 //  这个方法是用来实现对数加1操作
         boolean isOverflow = false; // 是否溢出
         int nTakeOver=0; // 是否进位
-        for(int i=number.length-1;i>=0;i--){
+        for(int i=number.length-1;i>=0;i--){ //从最后一位开始
             int nSum = number[i]+nTakeOver;
-            if(i==number.length-1)
+            if(i==number.length-1)//如果是最后一位，加一
                 nSum++;
-            if(nSum>=10){ 
-                if(i==0) 
-                    isOverflow=true;
+            if(nSum>=10){ //要进位
+                if(i==0) isOverflow=true; //如果是第一位要进位，溢出
                 else{
                     nTakeOver=1;
                     nSum=nSum-10;
@@ -820,7 +862,6 @@ public class Solution {
 
         while(!Increment(number)){
             PrintNumber(number);
-            //System.out.println();
         }
     }
 }
@@ -839,17 +880,6 @@ public class Solution {
             number[index+1]=i;
             PrintMaxOfNdigits(number, length, index+1);
         }
-    }
-    private void PrintNumber(int[] number){   //该方法是负责打印一个正类，千万不要尝试将数组变成一个整数
-        boolean isBeginning=true;
-        for(int i=0;i<number.length;i++){
-            if(isBeginning&&number[i]!=0)
-                isBeginning=false;
-            if(!isBeginning){
-                System.out.print(number[i]);
-            }
-        }
-        System.out.println();
     }
 
     public void prinNumber(int n){
