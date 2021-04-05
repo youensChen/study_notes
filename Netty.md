@@ -1664,13 +1664,13 @@ System.in.read();
   * 一种思路是首先分配一个较小的 buffer，例如 4k，如果发现数据不够，再分配 8k 的 buffer，将 4k buffer 内容拷贝至 8k buffer，优点是消息连续容易处理，缺点是数据拷贝耗费性能，参考实现 [http://tutorials.jenkov.com/java-performance/resizable-array.html](http://tutorials.jenkov.com/java-performance/resizable-array.html)
   * 另一种思路是用多个数组组成 buffer，一个数组不够，把多出来的内容写入新的数组，与前面的区别是消息存储不连续解析复杂，优点是避免了拷贝引起的性能损耗
 
+
+
 ### 4.5 处理 write 事件
-
-
 
 #### 一次无法写完例子
 
-* 非阻塞模式下，无法保证把 buffer 中所有数据都写入 channel，因此需要追踪 write 方法的返回值（代表实际写入字节数）
+* ==非阻塞模式下，无法保证把 buffer 中所有数据都写入 channel，因此需要追踪 write 方法的返回值（代表实际写入字节数），如果用while循环写入，当缓冲区满的时候，将无法写入，write()将返回0，此时线程将会在此卡住，直到可写入缓冲区==
 * 用 selector 监听所有 channel 的可写事件，每个 channel 都需要一个 key 来跟踪 buffer，但这样又会导致占用内存过多，就有两阶段策略
   * 当消息处理器第一次写入消息时，才将 channel 注册到 selector 上
   * selector 检查 channel 上的可写事件，如果所有的数据写完了，就取消 channel 的注册
@@ -1774,13 +1774,7 @@ public class WriteClient {
 
 
 
-
-
-
-
-
-
-### 4.6 更进一步
+### 4.6 更进一步多线程
 
 
 
@@ -1788,7 +1782,7 @@ public class WriteClient {
 
 > 现在都是多核 cpu，设计时要充分考虑别让 cpu 的力量被白白浪费
 
-
+![image-20210405112031777](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405112031.png)
 
 前面的代码只有一个选择器，没有充分利用多核 cpu，如何改进呢？
 
@@ -1797,7 +1791,151 @@ public class WriteClient {
 * 单线程配一个选择器，专门处理 accept 事件
 * 创建 cpu 核心数的线程，每个线程配一个选择器，轮流处理 read 事件
 
+#### 单worker
 
+服务端
+
+```java
+@Slf4j
+public class MultiThreadServer {
+    public static void main(String[] args) throws IOException {
+        Thread.currentThread().setName("boss");
+        ServerSocketChannel ssc = ServerSocketChannel.open();
+        ssc.configureBlocking(false);
+        Selector boss = Selector.open();
+        SelectionKey bossKey = ssc.register(boss, SelectionKey.OP_ACCEPT);
+        ssc.bind(new InetSocketAddress(8080));
+        Worker worker = new Worker("worker-0");
+
+
+        while (true) {
+            boss.select();
+            Iterator<SelectionKey> iter = boss.selectedKeys().iterator();
+            while (iter.hasNext()) {
+                SelectionKey key = iter.next();
+                iter.remove();
+                if (key.isAcceptable()) {
+                    SocketChannel sc = ssc.accept();
+                    log.debug("connected...{}", sc.getRemoteAddress());
+                    sc.configureBlocking(false);
+                    log.debug("before register...{}", sc.getRemoteAddress());
+                    
+                    worker.register(sc);
+                    
+                    log.debug("after register...{}", sc.getRemoteAddress());
+                    
+                }
+            }
+        }
+
+    }
+
+    static class Worker implements Runnable {
+        private Thread thread;
+        private Selector selector;
+        private String name;
+        private volatile boolean start = false;
+        private ConcurrentLinkedQueue<Runnable> queue = new ConcurrentLinkedQueue<>(); //解决线程之间传递数据
+
+
+        public Worker(String name) {
+            this.name = name;
+        }
+
+        public void register(SocketChannel sc) throws IOException {
+            if (!start) {
+                selector = selector.open();
+                thread = new Thread(this, name);
+                thread.start();
+                start = true;
+            }
+            //向队列添加任务，但任务没有执行
+            queue.add(() -> {
+                try {
+                    log.debug("add task...");
+                    sc.register(selector, SelectionKey.OP_READ, null);
+                } catch (ClosedChannelException e) {
+                    e.printStackTrace();
+                }
+            });
+            selector.wakeup(); //不要让select阻塞，以添加事件
+            log.debug("wakeup...");
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    log.debug("before select");
+                    selector.select();// 阻塞，wakeup
+                    log.debug("after wakeup...");
+                    Runnable task = queue.poll(); // 取出事件，注册到selector
+                    if (task != null) {
+                        task.run();
+                    }
+                    Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
+                    while (iter.hasNext()) {
+                        SelectionKey key = iter.next();
+                        log.debug("key: {}", key);
+                        iter.remove();
+                        if (key.isReadable()) {
+                            log.debug("read....");
+                            ByteBuffer buffer = ByteBuffer.allocate(16);
+                            SocketChannel channel = (SocketChannel) key.channel();
+                            log.debug("read...{}", channel.getRemoteAddress());
+                            channel.read(buffer);
+                            buffer.flip();
+                            debugAll(buffer);
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+```
+
+
+
+#### 可能出现的问题
+
+```java
+//工作线程的selector.select()
+//boss线程的sc.register(worker.selector, 0, null)
+//如果selector.select()执行在前，工作线程将被阻塞， sc.register(worker.selector, 0, null)执行在后
+//当boss调用sc.register(worker.selector,0,null)，获取worker.selector时，也被阻塞
+//worker.selector是共享变量
+```
+
+#### 问题解决方法
+
+**==使用ConcurrentLinkedQueue来解决=**=
+
+==使用ConcurrentLinkedQueue队列，将在boss线程执行的register交给worker线程执行。==
+
+**另一种解决方式**
+
+![image-20210405120557261](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405120557.png)
+
+```java
+//上图三条代码任意执行顺序均可保证结果正确
+public void register(SocketChannel sc) throws IOException {
+    if (!start) {
+        selector = selector.open();
+        thread = new Thread(this, name);
+        thread.start();
+        start = true;
+    }
+    selector.wakeup(); //不要让select阻塞，以添加事件
+    sc.register(selector, SelectionKey.OP_READ, null);
+}
+```
+
+
+
+#### 多worker
 
 ```java
 public class ChannelDemo7 {
