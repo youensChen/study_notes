@@ -2905,6 +2905,43 @@ new ServerBootstrap()
 
 ![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0041.png)
 
+在不同handler中执行
+
+```java
+@Slf4j
+public class Test {
+    public static void main(String[] args) {
+        DefaultEventLoopGroup defaultEventLoopGroup = new DefaultEventLoopGroup(2);
+        new ServerBootstrap()
+                .group(new NioEventLoopGroup(), new NioEventLoopGroup(2))
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<NioSocketChannel>() {
+                    @Override
+                    protected void initChannel(NioSocketChannel ch) throws Exception {
+                        ch.pipeline().addLast("handler1", new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                                ByteBuf buf = (ByteBuf) msg;
+                                log.debug("handler1: {}", buf.toString(Charset.defaultCharset()));
+                                //将消息传给下一个handler
+                                ctx.fireChannelRead(msg);
+                            }
+                        }).addLast(defaultEventLoopGroup, "handler2", new ChannelInboundHandlerAdapter(){
+                            @Override
+                            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                                ByteBuf buf = (ByteBuf) msg;
+                                log.debug("handler2: {}", buf.toString(Charset.defaultCharset()));
+                                super.channelRead(ctx, msg);
+                            }
+                        });
+                    }
+                })
+                .bind(8080);
+
+    }
+}
+```
+
 
 
 #### 💡 handler 执行中如何换人？
