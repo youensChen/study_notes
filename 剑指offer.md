@@ -2689,3 +2689,128 @@ public class Solution {
 ```
 
 ### 数组中的逆序对-P249
+
+```
+输入一个数组，求这个数组中逆序对的数量。
+如{7,5,6,4}，有5对逆序对：{7,6}，{7,5}，{7,4}，{6,4}，{5,4}
+```
+
+```java
+public class Solution {
+	// 归并排序
+    public static int inversePairs(int[] array) {
+        if (array == null || array.length <= 0) {
+            return 0;
+        }
+        int count = getCount(array, 0, array.length - 1);
+        return count;
+    }
+
+    private static int getCount(int[] array, int start, int end) {
+        if (start >= end) {
+            return 0;
+        }
+        int mid = (end + start) >> 1;
+        int left = getCount(array, start, mid);
+        int right = getCount(array, mid + 1, end);
+        
+        //计数器
+        int count = 0;
+        //左边区域的指针
+        int i = mid;
+        //右边区域的指针
+        int j = end;
+        //临时区域
+        int[] temp = new int[end - start + 1];
+        //临时区域的指针
+        int k = end - start;
+        
+        //合并
+        while (i >= start && j >= mid + 1) {
+            if (array[i] > array[j]) {
+                //由于子数组是已排序的，所以count+=右边子数组剩余的长度
+                count += (j - mid); 
+                temp[k--] = array[i--];
+            } else {
+                temp[k--] = array[j--];
+            }
+        }
+        while (i >= start) { //子数组中剩下的
+            temp[k--] = array[i--];
+        }
+        while (j >= mid + 1) {
+            temp[k--] = array[j--];
+        }
+        for (k = 0; k < temp.length; k++) {
+            array[k + start] = temp[k];
+        }
+
+        return count + left + right;
+    }
+
+}
+```
+
+### 两个链表中的第一个公共节点-P253
+
+![image-20210405094451313](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405094458.png)
+
+#### 快慢指针
+
+```java
+public static ListNode findFirstCommonNode(ListNode head1, ListNode head2) {
+        if (head1 == null || head2 == null) {
+            return null;
+        }
+        ListNode p = head1;
+        int count1 = 0;
+        while (p != null) {
+            p = p.next;
+            count1++;
+        }
+        p = head2;
+        int count2 = 0;
+        while (p != null) {
+            p = p.next;
+            count2++;
+        }
+        ListNode p1 = head1;
+        ListNode p2 = head2;
+        //快慢指针
+        if (count1 >= count2) {
+            int i = count1 - count2;
+            for (int j = i; j > 0; j--) {
+                p1 = p1.next;
+            }
+        } else {
+            int i = count2 - count1;
+            for (int j = i; j > 0; j--) {
+                p2 = p2.next;
+            }
+        }
+        while (p1 != null && p2 != null) {
+            if (p1 == p2) {
+                return p1;
+            }
+            p1 = p1.next;
+            p2 = p2.next;
+        }
+        return null;
+    }
+```
+
+#### 利用堆栈
+
+
+
+#### 利用哈希表
+
+
+
+# 面试中各项能力
+
+
+
+## 知识迁移能力
+
+### 在排序数组中查找数字-P261
