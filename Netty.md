@@ -2155,10 +2155,18 @@ public class UdpClient {
 
 ### 5.2 IO 模型
 
-同步阻塞、同步非阻塞、同步多路复用、异步阻塞（没有此情况）、异步非阻塞
+**==同步阻塞（对应阻塞io模型）==**
 
-* 同步：线程自己去获取结果（一个线程）
-* 异步：线程自己不去获取结果，而是由其它线程送结果（至少两个线程）
+**==同步非阻塞（对应非阻塞io模型）==**
+
+**==同步多路复用（对应多路复用io模型）==**
+
+**==异步阻塞（没有此情况）==**
+
+**==异步非阻塞（对应异步io模型）==**
+
+* ==同步：线程自己去获取结果（一个线程）==
+* ==异步：线程自己不去获取结果，而是由其它线程送结果（至少两个线程）==
 
 
 
@@ -2171,11 +2179,11 @@ public class UdpClient {
 
 * 阻塞 IO
 
-  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155526.png)
+  ![image-20210405153156134](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405153156.png)
 
 * 非阻塞  IO
 
-  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155522.png)
+  ![image-20210405153414491](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405153414.png)
 
 * 多路复用
 
@@ -2189,8 +2197,10 @@ public class UdpClient {
 
 * 阻塞 IO vs 多路复用
 
-  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155515.png)
+  ==阻塞io一个线程处理不了多种事件，而多路复用可以==
 
+  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155515.png)
+  
   ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155512.png)
 
 #### 🔖 参考
@@ -2220,7 +2230,7 @@ socket.getOutputStream().write(buf);
 
 ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155508.png)
 
-1. java 本身并不具备 IO 读写能力，因此 read 方法调用后，要从 java 程序的**用户态**切换至**内核态**，去调用操作系统（Kernel）的读能力，将数据读入**内核缓冲区**。这期间用户线程阻塞，操作系统使用 DMA（Direct Memory Access）来实现文件读，其间也不会使用 cpu
+1. java 本身并不具备 IO 读写能力，因此 read 方法调用后，要从 java 程序的**用户态**切换至**内核态**，去调用操作系统内涵（Kernel）的读能力，将数据读入**内核缓冲区**。这期间用户线程阻塞，操作系统使用 DMA（Direct Memory Access）来实现文件读，其间也不会使用 cpu
 
    > DMA 也可以理解为硬件单元，用来解放 cpu 完成文件 IO
 
@@ -2243,8 +2253,8 @@ socket.getOutputStream().write(buf);
 
 通过 DirectByteBuf 
 
-* ByteBuffer.allocate(10)  HeapByteBuffer 使用的还是 java 内存
-* ByteBuffer.allocateDirect(10)  DirectByteBuffer 使用的是操作系统内存
+* ByteBuffer.allocate(10)  HeapByteBuffer ==使用的还是 java 内存==
+* ByteBuffer.allocateDirect(10)  DirectByteBuffer ==使用的是操作系统内存==
 
 ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155503.png)
 
@@ -2317,6 +2327,12 @@ public class AioDemo1 {
                 	Paths.get("1.txt"), StandardOpenOption.READ);
             ByteBuffer buffer = ByteBuffer.allocate(2);
             log.debug("begin...");
+            /*
+            参数一：Bytebuffer
+            参数二：起始位置
+            参数三：附件
+            参数四：回调对象
+            */
             s.read(buffer, 0, null, new CompletionHandler<Integer, ByteBuffer>() {
                 @Override
                 public void completed(Integer result, ByteBuffer attachment) {
@@ -2335,7 +2351,7 @@ public class AioDemo1 {
             e.printStackTrace();
         }
         log.debug("do other things...");
-        System.in.read();
+        System.in.read(); //不让主线程停止，否则守护线程还没来得及放回结果就会停止
     }
 }
 ```
