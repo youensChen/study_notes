@@ -3306,6 +3306,107 @@ public class CloseFutureClient {
 | setSuccess   | -                              | -                                                            | 设置成功结果 |
 | setFailure   | -                              | -                                                            | 设置失败结果 |
 
+#### jdk.Future例子
+
+```java
+@Slf4j
+public class FutureTest {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        ExecutorService threadPool = new ThreadPoolExecutor(2,
+                5, 1, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>(3), Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy());
+        Future<Integer> submit = threadPool.submit(() -> {
+            log.debug("running for result....");
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return 1024;
+        });
+        log.debug("wait for order thread return...");
+        log.debug("result: {}", submit.get());
+        threadPool.shutdown();
+    }
+}
+14:34:46 [DEBUG] [main] c.y.n.FutureTest - wait for order thread return...
+14:34:46 [DEBUG] [pool-1-thread-1] c.y.n.FutureTest - running for result....
+14:34:47 [DEBUG] [main] c.y.n.FutureTest - result: 1024
+```
+
+#### netty.Future例子
+
+```java
+@Slf4j
+public class FutureTest {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        EventLoopGroup group = new NioEventLoopGroup();
+        EventLoop eventLoop = group.next();
+        Future<Integer> future = eventLoop.submit(() -> {
+            log.debug("running for result....");
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return 1024;
+        });
+
+        // 同步等待结果
+        log.debug("wait for order thread return...");
+        log.debug("result: {}",future.get() );
+        // 输出
+14:59:32 [DEBUG] [nioEventLoopGroup-2-1] c.y.n.FutureTest - running for result....
+14:59:32 [DEBUG] [main] c.y.n.FutureTest - wait for order thread return...
+14:59:33 [DEBUG] [main] c.y.n.FutureTest - result: 1024
+        
+        
+        // 异步等待结果
+        future.addListener(new GenericFutureListener<Future<? super Integer>>() {
+            @Override
+            public void operationComplete(Future<? super Integer> future) throws Exception {
+                log.debug("接收结果：{}", future.getNow());
+            }
+        });
+    	// 输出
+14:56:56 [DEBUG] [nioEventLoopGroup-2-1] c.y.n.FutureTest - running for result....
+14:56:57 [DEBUG] [nioEventLoopGroup-2-1] c.y.n.FutureTest - 接收结果：1024
+       
+    }
+}
+```
+
+#### netty.Promise例子
+
+```java
+@Slf4j
+public class FutureTest {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        EventLoopGroup group = new NioEventLoopGroup();
+        EventLoop eventLoop = group.next();
+        DefaultPromise<Integer> promise = new DefaultPromise<>(eventLoop);
+
+        eventLoop.submit(() -> {
+            log.debug("running for result....");
+            try {
+                TimeUnit.SECONDS.sleep(1);
+                promise.setSuccess(1024);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        promise.addListeners(promise1 -> log.debug("result: {}", promise1.getNow()));
+
+        log.debug("wait for order thread return...");
+        group.shutdownGracefully();
+    }
+}
+15:08:43 [DEBUG] [nioEventLoopGroup-2-1] c.y.n.FutureTest - running for result....
+15:08:43 [DEBUG] [main] c.y.n.FutureTest - wait for order thread return...
+15:08:44 [DEBUG] [nioEventLoopGroup-2-1] c.y.n.FutureTest - result: 1024
+```
+
 
 
 #### 例1
@@ -3565,10 +3666,10 @@ io.netty.util.concurrent.BlockingOperationException: DefaultPromise@47499c2a(inc
 
 ### 3.4 Handler & Pipeline
 
-ChannelHandler 用来处理 Channel 上的各种事件，分为入站、出站两种。所有 ChannelHandler 被连成一串，就是 Pipeline
+ChannelHandler 用来处理 Channel 上的各种事件，分为==入站==、==出站==两种。所有 ChannelHandler 被连成一串，就是 Pipeline
 
-* 入站处理器通常是 ChannelInboundHandlerAdapter 的子类，主要用来读取客户端数据，写回结果
-* 出站处理器通常是 ChannelOutboundHandlerAdapter 的子类，主要对写回结果进行加工
+* 入站处理器通常是 ChannelInboundHandlerAdapter 的子类，主要==用来读取客户端数据，写回结果==
+* 出站处理器通常是 ChannelOutboundHandlerAdapter 的子类，主要对==写回结果进行加工==
 
 打个比喻，每个 Channel 是一个产品的加工车间，Pipeline 是车间中的流水线，ChannelHandler 就是流水线上的各道工序，而后面要讲的 ByteBuf 是原材料，经过很多工序的加工：先经过一道道入站工序，再经过一道道出站工序最终变成产品
 
@@ -3674,8 +3775,8 @@ new Bootstrap()
   * 如果注释掉 6 处代码，则仅会打印 1 2 3 6
 * ctx.channel().write(msg) vs ctx.write(msg)
   * 都是触发出站处理器的执行
-  * ctx.channel().write(msg) 从尾部开始查找出站处理器
-  * ctx.write(msg) 是从当前节点找上一个出站处理器
+  * ctx.channel().write(msg) 从==尾部==开始查找出站处理器
+  * ctx.write(msg) 是从==当前节点找==上一个出站处理器
   * 3 处的 ctx.channel().write(msg) 如果改为 ctx.write(msg) 仅会打印 1 2 3，因为节点3 之前没有其它出站处理器了
   * 6 处的 ctx.write(msg, promise) 如果改为 ctx.channel().write(msg) 会打印 1 2 3 6 6 6... 因为 ctx.channel().write() 是从尾部开始查找，结果又是节点6 自己
 
