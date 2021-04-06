@@ -2813,4 +2813,127 @@ public static ListNode findFirstCommonNode(ListNode head1, ListNode head2) {
 
 ## 知识迁移能力
 
-### 在排序数组中查找数字-P261
+### 在排序数组中查找数字-P263
+
+#### 数字在排序数组中出现的次数-P263
+
+```
+在一个排序的数组中找到一个数字k出现的次数。
+例如{1,2,3,3,3,3,4,5}，数字3出现了4次，输出4。
+```
+
+
+
+```java
+//采用二分查找找到第一个k和最后一个k的位置
+public class Solution {
+    public int getNumberOfK(int[] nums, int k) {
+        if (nums == null || nums.length == 0) {
+            return -1;
+        }
+        int firstK = getFirstK(nums, 0, nums.length - 1, k);
+        int lastK = getLastK(nums, 0, nums.length - 1, k);
+        int res = -1;
+        if (firstK != -1 && lastK != -1) {
+            res = lastK - firstK + 1;
+        }
+        return res;
+
+    }
+
+    private int getFirstK(int[] nums, int start, int end, int k) {
+        if (start > end) {
+            return -1;
+        }
+        int mid = (start + end) / 2;
+        // 不知为什么这样为stack overflow
+        //int mid = (start + end) >> 2;
+        if (nums[mid] > k) {
+            return getFirstK(nums, start, mid - 1, k);
+        } else if (nums[mid] < k) {
+            return getFirstK(nums, mid + 1, end, k);
+        } else {
+            if (mid == 0 || nums[mid - 1] != k) { //k的前一个数不是k
+                return mid;
+            } else {
+                return getFirstK(nums, start, mid - 1, k);
+            }
+        }
+
+    }
+
+    private int getLastK(int[] nums, int start, int end, int k) {
+        if (start > end) {
+            return -1;
+        }
+        int mid = (start + end) / 2;
+        if (nums[mid] > k) {
+            return getLastK(nums, start, mid - 1, k);
+        } else if (nums[mid] < k) {
+            return getLastK(nums, mid + 1, end, k);
+        } else {
+            if (mid == nums.length - 1 || nums[mid + 1] != k) {//k的后一个数不是k
+                return mid;
+            } else {
+                return getLastK(nums, mid + 1, end, k);
+            }
+        }
+    }
+}
+
+
+```
+
+#### 0 ~ n-1中缺失的数字-P266
+
+```
+在长度为n-1的排序数组中所有数字都是唯一的，并且每个数字都在范围0 ~ n-1内。有且只有一个数字不在该数组中。
+数字中第一个值和下标不相等下标就是缺失的数字，采用 二分+减治 解决即可
+```
+
+
+
+#### 数字中数值和下标相等的数字-P267
+
+```
+单调递增的数组里每个元素都是整数且唯一。找出任意数值等于其下标的元素。
+二分查找即可。
+```
+
+
+
+### 二叉搜索树的第 k 大节点-P269
+
+```java
+public class E54KthBSTNode {
+    //二叉搜索树中第k个节点
+    private static int index;
+    public static BinaryTreeNode getKthNode(BinaryTreeNode root, int k){
+        if (root == null)
+            return null;
+        index = k;
+        return getKthNodeCore(root);
+    }
+
+    private static BinaryTreeNode getKthNodeCore(BinaryTreeNode root) {
+        //采用二叉树的中序遍历顺序查找第k个节点
+        BinaryTreeNode target = null;
+        if (root.left != null)
+            target = getKthNodeCore(root.left);
+        if (target == null){
+            if (index == 1)
+                target = root;
+            index--;
+        }
+        if (target == null && root.right != null)
+            target = getKthNodeCore(root.right);
+        return target;
+    }
+
+}
+```
+
+
+
+
+
