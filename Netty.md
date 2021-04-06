@@ -2743,7 +2743,7 @@ io.netty.channel.DefaultEventLoop@35f983a6
 
 
 
-#### 演示 NioEventLoop 处理 io 事件
+#### NioEventLoop 处理 io 事件
 
 服务器端两个 nio worker 工人
 
@@ -2805,7 +2805,7 @@ public static void main(String[] args) throws InterruptedException {
 
 可以看到两个工人（EventLoop）轮流处理 channel，但工人（EventLoop）与 channel 之间进行了绑定
 
-![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0042.png)
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210406104405.png)
 
 
 
@@ -2903,7 +2903,7 @@ new ServerBootstrap()
 
 
 
-![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0041.png)
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210406104400.png)
 
 在不同handler中执行
 
@@ -2945,6 +2945,8 @@ public class Test {
 
 
 #### 💡 handler 执行中如何换人？
+
+![image-20210406104352076](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210406104352.png)
 
 关键代码 `io.netty.channel.AbstractChannelHandlerContext#invokeChannelRead()`
 
@@ -3036,7 +3038,7 @@ channel 的主要作用
   * sync 方法作用是同步等待 channel 关闭
   * 而 addListener 方法是异步等待 channel 关闭
 * pipeline() 方法添加处理器
-* write() 方法将数据写入
+* write() 方法将数据写入，并没有立即写出，暂存在缓冲区
 * writeAndFlush() 方法将数据写入并刷出
 
 
@@ -3080,7 +3082,9 @@ channelFuture.sync().channel().writeAndFlush(new Date() + ": hello world!");
 
 * 1 处返回的是 ChannelFuture 对象，它的作用是利用 channel() 方法来获取 Channel 对象
 
-**注意** connect 方法是异步的，意味着不等连接建立，方法执行就返回了。因此 channelFuture 对象中不能【立刻】获得到正确的 Channel 对象
+**注意** ==connect 方法是异步的==，意味着不等连接建立，方法执行就返回了。因此 channelFuture 对象中不能【立刻】获得到正确的 Channel 对象
+
+带有 ==Future== 或者==Promiss== 名字的类一般都是==异步==的，需要==配套相关方法使用==
 
 实验如下：
 
@@ -3097,7 +3101,7 @@ ChannelFuture channelFuture = new Bootstrap()
     .connect("127.0.0.1", 8080);
 
 System.out.println(channelFuture.channel()); // 1
-channelFuture.sync(); // 2
+channelFuture.sync(); // 2 阻塞当前线程，知道nio线程执行连接完毕
 System.out.println(channelFuture.channel()); // 3
 ```
 
@@ -3105,7 +3109,9 @@ System.out.println(channelFuture.channel()); // 3
 * 执行到 2 时，sync 方法是同步等待连接建立完成
 * 执行到 3 时，连接肯定建立了，打印 `[id: 0x2e1884dd, L:/127.0.0.1:57191 - R:/127.0.0.1:8080]`
 
-除了用 sync 方法可以让异步操作同步以外，还可以使用回调的方式：
+除了用==sync== 方法可以让异步操作同步以外，还可以使用回调的方式：
+
+此方式与sync方式的区别是：==sync==还是==调用线程==去(即main)==等待结果==。而==回调方式==是==nio线程去等待结果==，且==调用operationComplete==方法去处理结果
 
 ```java
 ChannelFuture channelFuture = new Bootstrap()
@@ -3122,6 +3128,12 @@ System.out.println(channelFuture.channel()); // 1
 channelFuture.addListener((ChannelFutureListener) future -> {
     System.out.println(future.channel()); // 2
 });
+channelFuture.addListener(new ChannelFutureListener() {
+    @Override
+    public void operationComplete(ChannelFuture future) throws Exception {
+		System.out.println(future.channel()); // 2
+    }
+});
 ```
 
 * 执行到 1 时，连接未建立，打印 `[id: 0x749124ba]`
@@ -3130,6 +3142,51 @@ channelFuture.addListener((ChannelFutureListener) future -> {
 
 
 #### CloseFuture
+
+若直接关闭会出现的问题
+
+```java
+@Slf4j
+public class EventLoopClient {
+    public static void main(String[] args) throws InterruptedException {
+        ChannelFuture channelFuture = new Bootstrap()
+                .group(new NioEventLoopGroup())
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<NioSocketChannel>() {
+                    @Override
+                    protected void initChannel(NioSocketChannel ch) throws Exception {
+                        ch.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG));
+                        ch.pipeline().addLast(new StringEncoder());
+                    }
+                })
+                .connect(new InetSocketAddress("localhost", 8080));
+        Channel channel = channelFuture.sync().channel();
+        log.debug("{}" ,channel);
+        new Thread(() -> {
+            Scanner scanner = new Scanner(System.in);
+            while (true) {
+                String s = scanner.nextLine();
+                if ("q".equals(s)) {
+                    channel.close();
+                    log.debug("关闭channel后的操作");
+                    break;
+                }
+                channel.writeAndFlush(s);
+
+            }
+        }, "read thread").start();
+    }
+}
+// 控制台	
+q
+11:36:22 [DEBUG] [read thread] c.y.n.EventLoopClient - 关闭channel后的操作
+11:36:22 [DEBUG] [nioEventLoopGroup-2-1] i.n.h.l.LoggingHandler - [id: 0xcc9f8dee, L:/127.0.0.1:27263 - R:localhost/127.0.0.1:8080] CLOSE
+11:36:22 [DEBUG] [nioEventLoopGroup-2-1] i.n.h.l.LoggingHandler - [id: 0xcc9f8dee, L:/127.0.0.1:27263 ! R:localhost/127.0.0.1:8080] INACTIVE
+11:36:22 [DEBUG] [nioEventLoopGroup-2-1] i.n.h.l.LoggingHandler - [id: 0xcc9f8dee, L:/127.0.0.1:27263 ! R:localhost/127.0.0.1:8080] UNREGISTERED
+
+```
+
+
 
 ```java
 @Slf4j
@@ -3165,12 +3222,16 @@ public class CloseFutureClient {
         // 获取 CloseFuture 对象， 1) 同步处理关闭， 2) 异步处理关闭
         ChannelFuture closeFuture = channel.closeFuture();
         /*log.debug("waiting close...");
+        1) 同步处理关闭
         closeFuture.sync();
         log.debug("处理关闭之后的操作");*/
         closeFuture.addListener(new ChannelFutureListener() {
             @Override
+            // 注意，是绑定channel的nio线程执行的operationComplete()
             public void operationComplete(ChannelFuture future) throws Exception {
+                // 2) 异步处理关闭
                 log.debug("处理关闭之后的操作");
+                //优雅地关闭NioEventLoopGroup里面的其他线程，优雅关闭 `shutdownGracefully` 方法。该方法会首先切换 `EventLoopGroup` 到关闭状态从而拒绝新的任务的加入，然后在任务队列的任务都处理完成后，停止线程的运行。从而确保整体应用是在正常有序的状态下退出的
                 group.shutdownGracefully();
             }
         });
@@ -3190,21 +3251,9 @@ public class CloseFutureClient {
 
 
 
-
-
 思考下面的场景，4 个医生给人看病，每个病人花费 20 分钟，而且医生看病的过程中是以病人为单位的，一个病人看完了，才能看下一个病人。假设病人源源不断地来，可以计算一下 4 个医生一天工作 8 小时，处理的病人总数是：`4 * 8 * 3 = 96`
 
-![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0044.png)
-
-
-
-
-
-
-
-
-
-
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210406115834.png)
 
 
 
@@ -3212,11 +3261,7 @@ public class CloseFutureClient {
 
 经研究发现，看病可以细分为四个步骤，经拆分后每个步骤需要 5 分钟，如下
 
-![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0048.png)
-
-
-
-
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210406115839.png)
 
 
 
@@ -3226,13 +3271,13 @@ public class CloseFutureClient {
 
 因此可以做如下优化，只有一开始，医生 2、3、4 分别要等待 5、10、15 分钟才能执行工作，但只要后续病人源源不断地来，他们就能够满负荷工作，并且处理病人的能力提高到了 `4 * 8 * 12` 效率几乎是原来的四倍
 
-![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0047.png)
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210406115845.png)
 
-要点
+##### 要点
 
 * 单线程没法异步提高效率，必须配合多线程、多核 cpu 才能发挥异步的优势
-* 异步并没有缩短响应时间，反而有所增加
-* 合理进行任务拆分，也是利用异步的关键
+* ==异步并没有缩短响应时间，反而有所增加==
+* ==合理进行任务拆分，也是利用异步的关键==
 
 
 
@@ -3240,11 +3285,11 @@ public class CloseFutureClient {
 
 在异步处理时，经常用到这两个接口
 
-首先要说明 netty 中的 Future 与 jdk 中的 Future 同名，但是是两个接口，netty 的 Future 继承自 jdk 的 Future，而 Promise 又对 netty Future 进行了扩展
+首先要说明 netty 中的 Future 与 jdk 中的 Future 同名，但是是两个接口，netty 的 Future 继承自 jdk 的 Future，而 Promise 又对 netty Future 进行了扩展 jdk.Future<-----netty.Future<-------netty.promis
 
-* jdk Future 只能同步等待任务结束（或成功、或失败）才能得到结果
-* netty Future 可以同步等待任务结束得到结果，也可以异步方式得到结果，但都是要等任务结束
-* netty Promise 不仅有 netty Future 的功能，而且脱离了任务独立存在，只作为两个线程间传递结果的容器
+* jdk Future ==只能同步==等待任务结束（或成功、或失败）才能得到结果
+* netty Future 可以==同步等待==任务结束得到结果，也可以==异步==方式得到结果，但==都是要等任务结束==
+* netty Promise 不仅有 netty Future 的功能，而且==脱离了任务独立==存在，只作为==两个线程间传递结果的容器==
 
 | 功能/名称    | jdk Future                     | netty Future                                                 | Promise      |
 | ------------ | ------------------------------ | ------------------------------------------------------------ | ------------ |
