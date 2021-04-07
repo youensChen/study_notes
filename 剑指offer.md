@@ -2935,5 +2935,98 @@ public class E54KthBSTNode {
 
 
 
+### 二叉树的深度-P271
 
+```
+输入一棵二叉树，求树的深度。从根节点到叶子节点依次经过的节点构成的路径，最长的路径长度为树的深度。
+```
+
+```java
+public class Solution {
+    public static int treeDepth(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int left = treeDepth(root.left);
+        int right = treeDepth(root.right);
+        return (left > right) ? (left + 1) : (right + 1);
+    }
+}
+```
+
+
+
+### 平衡二叉树-P273
+
+```
+输入一个树的根节点，判断该树是不是平衡二叉树（任意节点的左右子树的深度相差不超过1）。
+```
+
+递归求深度，效率差，节点多次访问
+
+```java
+public class Solution {
+    public static int treeDepth(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int left = treeDepth(root.left);
+        int right = treeDepth(root.right);
+        return (left > right) ? (left + 1) : (right + 1);
+    }
+
+    public static boolean isBalanced(TreeNode root) {
+        if (root == null) {
+            return true;
+        }
+        int left = treeDepth(root.left);
+        int right = treeDepth(root.right);
+        if (Math.abs(left - right) > 1) {
+            return false;
+        }
+        return isBalanced(root.left) && isBalanced(root.right);
+    }
+}
+```
+
+后续遍历，每个节点只访问一次
+
+```java
+
+public class Solution {
+    private boolean isBalanced = false;//最后的返回值
+    public boolean IsBalanced_Solution(TreeNode root) {
+            getDepth(root);
+            return isBalanced;
+    }
+    
+    public int getDepth(TreeNode root) {
+        if(root == null) {
+            isBalanced = true;
+            return 0;
+        }
+        int left = getDepth(root.left);//左子树
+        int right = getDepth(root.right);//右子树
+        int depth = (left > right ? left : right) + 1;
+        if(Math.abs(left - right) <= 1) {
+            isBalanced = true;
+        } else {
+            isBalanced = false;
+        }
+        return depth;//下层的深度，上层可以接着用免得再遍历
+    }
+}
+```
+
+### 数组中数组出现的次数-P275
+
+#### 数组中只出现一次的两个数字
+
+==任意两个相同的数进行异或运算都等于0==
+
+```
+一个整型数组里除了两个数字外，其他的数字都出现了两次。找出这两个只出现一次的数字。
+要求时间O(n)，空间O(1)。
+如果只有一个数字出现一次，其他数字都出现两次，对数组里所有数进行异或运算的结果就是那个只出现一次的数字。
+```
 
