@@ -3775,8 +3775,8 @@ new Bootstrap()
   * 如果注释掉 6 处代码，则仅会打印 1 2 3 6
 * ctx.channel().write(msg) vs ctx.write(msg)
   * 都是触发出站处理器的执行
-  * ctx.channel().write(msg) 从==尾部==开始查找出站处理器
-  * ctx.write(msg) 是从==当前节点找==上一个出站处理器
+  * ==ctx.channel().write(msg)== 从==尾部==开始查找出站处理器
+  * ==ctx.write(msg)== 是从==当前节点找==上一个出站处理器
   * 3 处的 ctx.channel().write(msg) 如果改为 ctx.write(msg) 仅会打印 1 2 3，因为节点3 之前没有其它出站处理器了
   * 6 处的 ctx.write(msg, promise) 如果改为 ctx.channel().write(msg) 会打印 1 2 3 6 6 6... 因为 ctx.channel().write() 是从尾部开始查找，结果又是节点6 自己
 
@@ -3795,7 +3795,7 @@ new Bootstrap()
 #### 1）创建
 
 ```java
-ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer(10);
+ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer(10); // 空参默认大小256，分配直接内存
 log(buffer);
 ```
 
@@ -3846,6 +3846,8 @@ ByteBuf buffer = ByteBufAllocator.DEFAULT.directBuffer(10);
 
 #### 3）池化 vs 非池化
 
+==对于创建比较慢的或者消耗比较大的对象，可以使用池来管理==
+
 池化的最大意义在于可以重用 ByteBuf，优点有
 
 * 没有池化，则每次都得创建新的 ByteBuf 实例，这个操作对直接内存代价昂贵，就算是堆内存，也会增加 GC 压力
@@ -3855,7 +3857,7 @@ ByteBuf buffer = ByteBufAllocator.DEFAULT.directBuffer(10);
 池化功能是否开启，可以通过下面的系统环境变量来设置
 
 ```java
--Dio.netty.allocator.type={unpooled|pooled}
+-Dio.netty.allocator.type={unpooled|pooled} //win默认开启
 ```
 
 * 4.1 以后，非 Android 平台默认启用池化实现，Android 平台启用非池化实现
@@ -3871,27 +3873,27 @@ ByteBuf 由四部分组成
 
 最开始读写指针都在 0 位置
 
-
+max capacity - capacity为可扩容部分，max capacity默认值为 ==Integer.MAX_VALUE==，所以需要手动修改
 
 #### 5）写入
 
 方法列表，省略一些不重要的方法
 
-| 方法签名                                                     | 含义                   | 备注                                        |
-| ------------------------------------------------------------ | ---------------------- | ------------------------------------------- |
-| writeBoolean(boolean value)                                  | 写入 boolean 值        | 用一字节 01\|00 代表 true\|false            |
-| writeByte(int value)                                         | 写入 byte 值           |                                             |
-| writeShort(int value)                                        | 写入 short 值          |                                             |
-| writeInt(int value)                                          | 写入 int 值            | Big Endian，即 0x250，写入后 00 00 02 50    |
-| writeIntLE(int value)                                        | 写入 int 值            | Little Endian，即 0x250，写入后 50 02 00 00 |
-| writeLong(long value)                                        | 写入 long 值           |                                             |
-| writeChar(int value)                                         | 写入 char 值           |                                             |
-| writeFloat(float value)                                      | 写入 float 值          |                                             |
-| writeDouble(double value)                                    | 写入 double 值         |                                             |
-| writeBytes(ByteBuf src)                                      | 写入 netty 的 ByteBuf  |                                             |
-| writeBytes(byte[] src)                                       | 写入 byte[]            |                                             |
-| writeBytes(ByteBuffer src)                                   | 写入 nio 的 ByteBuffer |                                             |
-| int writeCharSequence(CharSequence sequence, Charset charset) | 写入字符串             |                                             |
+| 方法签名                                                     | 含义                   | 备注                                                        |
+| ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------- |
+| writeBoolean(boolean value)                                  | 写入 boolean 值        | 用一字节 01\|00 代表 true\|false                            |
+| writeByte(int value)                                         | 写入 byte 值           |                                                             |
+| writeShort(int value)                                        | 写入 short 值          |                                                             |
+| writeInt(int value)                                          | 写入 int 值            | Big Endian，即 0x250，写入后 00 00 02 50，==大端==          |
+| writeIntLE(int value)                                        | 写入 int 值            | Little Endian，即 0x250，写入后 50 02 00 00，小端           |
+| writeLong(long value)                                        | 写入 long 值           |                                                             |
+| writeChar(int value)                                         | 写入 char 值           |                                                             |
+| writeFloat(float value)                                      | 写入 float 值          |                                                             |
+| writeDouble(double value)                                    | 写入 double 值         |                                                             |
+| writeBytes(ByteBuf src)                                      | 写入 netty 的 ByteBuf  |                                                             |
+| writeBytes(byte[] src)                                       | 写入 byte[]            |                                                             |
+| writeBytes(ByteBuffer src)                                   | 写入 nio 的 ByteBuffer |                                                             |
+| int writeCharSequence(CharSequence sequence, Charset charset) | 写入字符串             | String、StringBuffer、StringBuilder都实现了CharSequence接口 |
 
 > 注意
 >
@@ -4037,7 +4039,7 @@ read index:4 write index:12 capacity:16
 +--------+-------------------------------------------------+----------------+
 ```
 
-还有种办法是采用 get 开头的一系列方法，这些方法不会改变 read index
+还有种办法是采用 ==get== 开头的一系列方法，这些方法不会改变 ==read index==
 
 
 
@@ -4046,7 +4048,7 @@ read index:4 write index:12 capacity:16
 由于 Netty 中有堆外内存的 ByteBuf 实现，堆外内存最好是手动来释放，而不是等 GC 垃圾回收。
 
 * UnpooledHeapByteBuf 使用的是 JVM 内存，只需等 GC 回收内存即可
-* UnpooledDirectByteBuf 使用的就是直接内存了，需要特殊的方法来回收内存
+* UnpooledDirectByteBuf 使用的就是直接内存了，需要==手动调用特殊的方法==来回收内存
 * PooledByteBuf 和它的子类使用了池化机制，需要更复杂的规则来回收内存
 
 
@@ -4081,23 +4083,23 @@ try {
 
 请思考，因为 pipeline 的存在，一般需要将 ByteBuf 传递给下一个 ChannelHandler，如果在 finally 中 release 了，就失去了传递性（当然，如果在这个 ChannelHandler 内这个 ByteBuf 已完成了它的使命，那么便无须再传递）
 
-基本规则是，**谁是最后使用者，谁负责 release**，详细分析如下
+基本规则是，**==谁是最后使用者，谁负责 release==**，详细分析如下
 
 * 起点，对于 NIO 实现来讲，在 io.netty.channel.nio.AbstractNioByteChannel.NioByteUnsafe#read 方法中首次创建 ByteBuf 放入 pipeline（line 163 pipeline.fireChannelRead(byteBuf)）
 * 入站 ByteBuf 处理原则
   * 对原始 ByteBuf 不做处理，调用 ctx.fireChannelRead(msg) 向后传递，这时无须 release
-  * 将原始 ByteBuf 转换为其它类型的 Java 对象，这时 ByteBuf 就没用了，必须 release
-  * 如果不调用 ctx.fireChannelRead(msg) 向后传递，那么也必须 release
-  * 注意各种异常，如果 ByteBuf 没有成功传递到下一个 ChannelHandler，必须 release
+  * ==将原始 ByteBuf 转换为其它类型的 Java 对象，这时 ByteBuf 就没用了，必须 release==
+  * 如果==不调用 ctx.fireChannelRead(msg) 向后传递，那么也必须 release==
+  * 注意各种异常，如果 ByteBuf ==没有成功传递到下一个 ChannelHandler，必须 release==
   * 假设消息一直向后传，那么 TailContext 会负责释放未处理消息（原始的 ByteBuf）
 * 出站 ByteBuf 处理原则
-  * 出站消息最终都会转为 ByteBuf 输出，一直向前传，由 HeadContext flush 后 release
+  * 出站消息==最终都会转为 ByteBuf 输出==，一直向前传，由 HeadContext flush 后 release
 * 异常处理原则
-  * 有时候不清楚 ByteBuf 被引用了多少次，但又必须彻底释放，可以循环调用 release 直到返回 true
+  * 有时候不清楚 ByteBuf 被引用了多少次，但又必须彻底释放，可以==循环调用 release 直到返回 true==
 
 
 
-TailContext 释放未处理消息逻辑
+==TailContext== 释放未处理消息逻辑
 
 ```java
 // io.netty.channel.DefaultChannelPipeline#onUnhandledInboundMessage(java.lang.Object)
@@ -4128,7 +4130,9 @@ public static boolean release(Object msg) {
 
 #### 9）slice
 
-【零拷贝】的体现之一，对原始 ByteBuf 进行切片成多个 ByteBuf，切片后的 ByteBuf 并没有发生内存复制，还是使用原始 ByteBuf 的内存，切片后的 ByteBuf 维护独立的 read，write 指针
+【==零拷贝==】的体现之一，对原始 ByteBuf 进行==切片==成多个 ByteBuf，切片后的 ByteBuf 并==没有发生内存复制==，还是使用原始 ByteBuf 的内存，切片后的 ByteBuf 维护独立的 read，write 指针，==逻辑上分为了两个ByteBuf==
+
+==对原来ByteBuf.release()释放后，切片将无法再使用，所以使用切片，应该条用retain，使用完后再调用release==
 
 ![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0011.png)
 
@@ -4151,7 +4155,7 @@ System.out.println(ByteBufUtil.prettyHexDump(origin));
 +--------+-------------------------------------------------+----------------+
 ```
 
-这时调用 slice 进行切片，无参 slice 是从原始 ByteBuf 的 read index 到 write index 之间的内容进行切片，切片后的 max capacity 被固定为这个区间的大小，因此不能追加 write
+这时调用 slice 进行切片，==无参 slice 是从原始 ByteBuf 的 read index 到 write index 之间的内容进行切片==，切片后的 max capacity 被固定为这个区间的大小，因此不能追加 write
 
 ```java
 ByteBuf slice = origin.slice();
@@ -4239,7 +4243,7 @@ System.out.println(ByteBufUtil.prettyHexDump(origin));
 
 #### 10）duplicate
 
-【零拷贝】的体现之一，就好比截取了原始 ByteBuf 所有内容，并且没有 max capacity 的限制，也是与原始 ByteBuf 使用同一块底层内存，只是读写指针是独立的
+【==零拷贝==】的体现之一，就好比截取了原始 ByteBuf ==所有内容==，并且没有 max capacity 的限制，也是与原始 ByteBuf 使用同一块底层内存，只是读写指针是独立的
 
 ![](D:\Personal\Desktop\Netty教程源码资料\讲义\img\0012.png)
 
@@ -4247,13 +4251,13 @@ System.out.println(ByteBufUtil.prettyHexDump(origin));
 
 #### 11）copy
 
-会将底层内存数据进行深拷贝，因此无论读写，都与原始 ByteBuf 无关
+会将底层内存数据进行==深拷贝==，因此无论读写，都==与原始 ByteBuf 无关==
 
 
 
 #### 12）CompositeByteBuf
 
-【零拷贝】的体现之一，可以将多个 ByteBuf 合并为一个逻辑上的 ByteBuf，避免拷贝
+【零拷贝】的体现之一，可以将多个 ByteBuf 合并为一个==逻辑上==的 ByteBuf，避免拷贝
 
 有两个 ByteBuf 如下
 
