@@ -3028,5 +3028,181 @@ public class Solution {
 一个整型数组里除了两个数字外，其他的数字都出现了两次。找出这两个只出现一次的数字。
 要求时间O(n)，空间O(1)。
 如果只有一个数字出现一次，其他数字都出现两次，对数组里所有数进行异或运算的结果就是那个只出现一次的数字。
+
+
 ```
+
+
+
+```java
+/*
+思路：数组中只有两个数只出现了一次，其他的都出现了一次，那么有没有办法把数组分成两半呢？每一半都是只有一个数字只出现一个，其他数字都出现两次，再通过异或操作既可以找出这两个不同的数了。
+
+原数组中所有数异或的结果就是那两个出现了一个的数的异或的结果，异或结果一定不为0，那么结果的二进制中至少有一位为1。找到第一位为1的位置，记为n，以第n位是否为1，将原数组分为两部分即可。
+*/
+
+public class Solution {
+    public int[] findNumsAppearOnce(int nums[]) {
+        if (nums == null || nums.length == 0) {
+            return null;
+        }
+        int temp = 0;
+        for (int i = 0; i < nums.length; i++) {
+            temp = temp ^ nums[i];
+        }
+        int firstOneBit = findFirstOneBit(temp); // 从低位到高位第一个1的位置
+        int res1 = 0;
+        int res2 = 0;
+        for (int i = 0; i < nums.length; i++) {
+            if (indexBitIsOne(nums[i], firstOneBit)) {
+                res1 = res1 ^ nums[i];
+            } else {
+                res2 = res2 ^ nums[i];
+            }
+        }
+        return new int[]{res1, res2};
+    }
+
+    private int findFirstOneBit(int target) {
+        int count = 0;
+        while ((target&1) == 0) {
+            target = target >>> 1;
+            count++;
+        }
+        return count;
+    }
+
+    private boolean indexBitIsOne(int number, int index) {
+        number = number >>> index;
+        return (number & 1) == 1;
+    }
+}
+
+```
+
+
+
+#### 数组中唯一一个只出现一次的数字
+
+```
+在一个数组中除了一个数字只出现了一次外，其他数字都出现了三次。找出那个只出现了一次的数字。
+```
+
+```java
+/*
+思路：所有出现了三次的数字，它们对应的二进制位加起来取余3一定为0，若某一位取余不为0，则说明只出现了一次的数字的那一位为1.
+*/
+
+public class Solution {
+    public int findNunAppareOnce(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            throw new IllegalArgumentException("argument invalid");
+        }
+        int[] bitValues = new int[64];
+        for (int i = 0; i < nums.length; i++) {
+            int bitMask = 1;
+            for (int j = bitValues.length - 1; j >= 0; j--) {
+                if ((nums[i] & bitMask) != 0) {
+                    bitValues[j]++;
+                }
+                bitMask = bitMask << 1;
+            }
+        }
+        int res = 0;
+        for (int i = 0; i < bitValues.length; i++) {
+            res = res << 1;
+            res += bitValues[i] % 3;
+        }
+        System.out.println(Arrays.toString(bitValues));
+        return res;
+    }
+}
+```
+
+
+
+### 和为S的数字-P280
+
+#### 和为S的两个数字
+
+```
+输入一个递增数字和一个数字S， 在数组中找到任意两个数，使得它们的和为S。
+```
+
+```java
+// 双指针法
+
+public class Solution {
+    public int[] sumOfTwoNumsIsTarget(int[] nums, int target) {
+        if (nums == null || nums.length == 0) {
+            return null;
+        }
+
+        int begin = 0;
+        int end = nums.length - 1;
+        while (begin < end) {
+            if ((nums[begin] + nums[end]) == target) {
+                break;
+            } else if ((nums[begin] + nums[end]) < target) {
+                begin++;
+            } else {
+                end--;
+            }
+        }
+        if ((nums[begin] + nums[end]) == target) {
+            return new int[]{nums[begin], nums[end]};
+        }
+        return null;
+    }
+}
+```
+
+#### 和为S的连续整数序列
+
+```
+输入一个整数S，输出所有和为S的连续正数序列（至少有两个数）。
+例如，输入15，由于1+2+3+4+5 = 4+5+6 = 7+8 = 15，所以输出这三个序列。
+```
+
+```java
+//双指针法
+
+public class Solution {
+    public void findContinuousSequence(int sum) {
+        if (sum < 3) {
+            return;
+        }
+        int begin = 1;
+        int end = 2;
+        int mid = sum / 2;
+        int curSum = 3;
+        while (begin <= mid) {
+            if (curSum == sum) {
+                printSequence(begin, end);
+                end++;
+                curSum += end;
+            } else if (curSum < sum) {
+                end++;
+                curSum += end;
+            } else {
+                curSum -= begin;
+                begin++;
+            }
+        }
+    }
+    private void printSequence(int begin, int end) {
+        StringBuilder s = new StringBuilder("[");
+        for (int i = begin; i <= end; i++) {
+            if (i < end) {
+                s.append(i + ", ");
+            } else {
+                s.append(i + "]");
+            }
+        }
+        System.out.println(s.toString());
+    }
+}
+```
+
+### 翻转字符串-P284
 
