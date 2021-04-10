@@ -3206,3 +3206,190 @@ public class Solution {
 
 ### 翻转字符串-P284
 
+#### 翻转单词顺序
+
+```
+翻转英文句子中单词的顺序，但单词内字符的顺序不变。
+如 I am a student.  翻转为 student. a an I。
+```
+
+```java
+//先翻转整个句子，再翻转每个单词
+public class Solution {
+    public String reverseSentence(String str) {
+        if (str == null || str.length() == 0) {
+            return null;
+        }
+        String s = reverseSequece(str,0, str.length());
+        System.out.println(s);
+        StringBuilder res = new StringBuilder();
+        int start = 0;
+        int end = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == ' ') {
+                end = i;
+                res.append(reverseSequece(s, start, end)+" ");
+                start = end + 1;
+            }
+        }
+        res.append(reverseSequece(s, start, s.length()));
+        return res.toString();
+
+    }
+
+    private String reverseSequece(String str, int start, int end) {
+        StringBuilder stringBuilder = new StringBuilder(str.substring(start, end)).reverse();
+        return stringBuilder.toString() ;
+    }
+}
+```
+
+
+
+#### 左旋转字符串
+
+```
+左旋转字符串是把字符串前面的若干个字符串移到字符串的尾部。
+如输入 abcdefg 和 2 ，输出 cdefgab
+```
+
+```java
+// 调用三次翻转函数即可
+public class Solution {
+    public String reverseSentence(String str, int i) {
+        if (str == null || str.length() == 0) {
+            return null;
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        // 翻转前面的部分
+        stringBuilder.append(reverseSequece(str, 0, i));
+        // 翻转后面的部分
+        stringBuilder.append(reverseSequece(str, i, str.length()));
+        // 翻转整个部分
+        return stringBuilder.reverse().toString();
+    }
+
+    private String reverseSequece(String str, int start, int end) {
+        StringBuilder stringBuilder = new StringBuilder(str.substring(start, end)).reverse();
+        return stringBuilder.toString() ;
+    }
+}
+```
+
+### 队列的最大值-P288
+
+#### 滑动窗口的最大值
+
+```
+给定一个数组和滑动窗口的大小，请找出所有滑动窗口的最大值。
+如数组{2,3,4,2,6,2,5,1}和滑动窗口大小3，则输出{4,4,6,6,6,5}
+
+```
+
+![image-20210410102053701](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210410102101.png)
+
+```java
+//
+
+public class Solution {
+    public List<Integer> maxInWindows(int[] nums, int size) {
+        if (nums == null || nums.length == 0 || size == 0) {
+            return null;
+        }
+        // 记录最大值
+        Deque<Integer> deque = new LinkedList<>();
+        List<Integer> res = new ArrayList<>();
+        int curSize = 0;
+        for (int i = 0; i < nums.length; i++) {
+            if (deque.isEmpty()) {
+                deque.addLast(i);
+            } else {
+                if (i - deque.peekFirst() >= size) {// 第一个值已滑出窗口
+                    deque.pollFirst();
+                }
+                while (!deque.isEmpty()) {
+                    if (nums[deque.peekLast()] <= nums[i]) { // 如果队列里的小，移除
+                        deque.pollLast();
+                    }else{
+                        break;
+                    }
+                }
+                deque.addLast(i);
+            }
+            curSize++;
+            if (curSize >= 3) {
+                res.add(nums[deque.peekFirst()]);
+            }
+        }
+        return res;
+    }
+}
+```
+
+
+
+#### 队列的最大值
+
+```
+定义一个队列并实现函数max()得到队列里的最大值，要求max()、push_back()、pop_from()的时间复杂度都是O(1)
+```
+
+```java
+public class QueueWithMax {
+    private ArrayDeque<InternalData>  data = new ArrayDeque<InternalData>();
+    private ArrayDeque<InternalData> maximum = new ArrayDeque<InternalData>();
+    private class InternalData{
+        int number;
+        int index;
+        public InternalData(int number,int index) {
+            this.number=number;
+            this.index=index;
+        }
+    }
+    private int curIndex;
+     
+    public void push_back(int number) {
+        InternalData curData = new InternalData(number,curIndex);
+        data.addLast(curData);
+         
+        while(!maximum.isEmpty() && maximum.getLast().number<number)
+            maximum.removeLast();
+        maximum.addLast(curData);
+         
+        curIndex++;  //别漏了这句
+    }
+     
+    public void pop_front() {
+        if(data.isEmpty()) {
+            System.out.println("队列为空，无法删除！");
+            return;
+        }
+        InternalData curData = data.removeFirst();
+        if(curData.index==maximum.getFirst().index)
+            maximum.removeFirst();
+    }
+     
+    public int max() {
+        if(maximum==null){
+            System.out.println("队列为空，无法删除！");
+            return 0;
+        }
+        return maximum.getFirst().number;
+    }
+}
+```
+
+
+
+## 抽象建模能力
+
+
+
+
+
+
+
+
+
+
+
