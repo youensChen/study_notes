@@ -3383,9 +3383,116 @@ public class QueueWithMax {
 
 ## 抽象建模能力
 
+### n个骰子的点数-P295
 
 
 
+### 扑克牌中的顺子-P298
+
+```
+从扑克牌中随机抽5张牌，判断是不是一个顺子。2~10为数字本身，A为1，J为11，Q为12，K为13，大王小王可以看做任意数字。
+```
+
+```java
+public class Solution {
+    public boolean isContinuos(int[] nums) {
+        if (nums == null || nums.length != 5) {
+            throw new IllegalArgumentException("input invalid..");
+        }
+        // 排序
+        Arrays.sort(nums);
+
+        int numsOfZero = 0;
+        // 统计0的个数
+        for (int i = 0; i < nums.length; i++) {
+            if (nums[i] == 0) {
+                numsOfZero++;
+            }
+        }
+
+        int smallNum = nums[numsOfZero];
+        int cur = smallNum + 1;
+        for (int i = numsOfZero + 1; i < nums.length; i++) {
+            // 有对子
+            if (i > 1 && nums[i] == nums[i - 1]) {
+                return false;
+            }
+            // 不连续
+            if (nums[i] != cur) {
+                numsOfZero -= (nums[i] - cur);
+                cur = nums[i] + 1;
+            // 连续
+            } else {
+                cur++;
+            }
+        }
+        return (numsOfZero >= 0);
+    }
+
+}
+```
+
+
+
+
+
+### 圆圈中最后剩下的数字-P300
+
+```
+n个数字排成一圈，从0开始，每次从这个圆圈里删除第m个数字。求出这个圆圈里剩下的最后一个数字。
+```
+
+#### 链表解法
+
+```java
+public class Solution {
+
+    public int lastRemaining(int n, int m) {
+        if (n <= 0 || m <= 0) {
+            throw new IllegalArgumentException("Argument Invalid.");
+        }
+        LinkedList<Integer> loop = new LinkedList<>();
+        for (int i = 0; i < n; i++) {
+            loop.add(i);
+        }
+        int rmIndex = 0;
+        while (loop.size() != 1) {
+            rmIndex = (rmIndex + m - 1) % loop.size();
+            loop.remove(rmIndex);
+        }
+        return loop.getFirst();
+    }
+}
+
+
+```
+
+#### 离谱解法
+
+![img](https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fthenewswheel.com%2Fwp-content%2Fuploads%2F2014%2F08%2FDAMN.gif&refer=http%3A%2F%2Fthenewswheel.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1620697610&t=3849abbeb3fb4d8d7106d1cf83e398c8)
+
+![image-20210411100727634](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210411100727.png)
+
+```java
+public class Solution {
+    public int lastRemaining(int n, int m) {
+        if (n <= 0 || m <= 0) {
+            throw new IllegalArgumentException("Argument Invalid.");
+        }
+        int last = 0;
+        for(int i=2; i <= n; i++){
+            last = (last + m) % i;
+        }
+        return last;
+    }
+}
+```
+
+
+
+
+
+### 股票的最大利润-P304
 
 
 
