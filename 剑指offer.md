@@ -1367,7 +1367,7 @@ public void mirrorRecursively(TreeNode head) {
         if (head.left == null && head.rigth == null) {
             return;
         }
-        // 本层
+        // 本层，交换左右孩子
         TreeNode temp = head.left;
         head.left = head.rigth;
         head.rigth = temp;
@@ -1385,7 +1385,7 @@ public void mirrorRecursively(TreeNode head) {
 ### 对称的二叉树-P159
 
 ```
-通过定义一种遍历方法（根、右、左）发现遍历出来的序列和前序遍历序列一直，则这棵二叉树就是对称的二叉树。
+通过定义一种遍历方法（根、右、左）发现遍历出来的序列和前序遍历序列一样，则这棵二叉树就是对称的二叉树。
 如第一棵树前序：8,6,5,7,6,7,5  对称前序遍历为: 8,6,5,7,6,7,5。 一致则为对称二叉树。对于第三棵树，考虑null即可。
 ```
 
@@ -1409,8 +1409,8 @@ public class Solution {
             return false;
         }
         // 下层
-        return isSymmetrical(head1.left, head2.rigth) &&
-                isSymmetrical(head1.rigth, head2.left);
+        return isSymmetrical(head1.left, head2.right) &&
+                isSymmetrical(head1.right, head2.left);
     }
 }
 ```
@@ -2594,7 +2594,6 @@ public class Solution {
             if (prePosition < 0 || distance > curLength) {
                 curLength++;
             } else {
-
                 //更新最长非重复子字符串的长度
                 if (curLength > maxLength) {
                     maxLength = curLength;
@@ -2947,7 +2946,7 @@ public class Solution {
         if (root == null) {
             return 0;
         }
-        int left = treeDepth(root.left);
+        int left = treeDepth(roo	t.left);
         int right = treeDepth(root.right);
         return (left > right) ? (left + 1) : (right + 1);
     }
