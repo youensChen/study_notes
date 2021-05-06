@@ -312,8 +312,9 @@ queue：消息队列，图中红色部分。类似一个邮箱，可以缓存消
   Connection connection = connectionFactory.newConnection();
   //创建通道
   Channel channel = connection.createChannel();
-  //参数1: 是否持久化  参数2:是否独占队列 参数3:是否自动删除  参数4:其他属性
-  channel.queueDeclare("hello",true,false,false,null);
+  //参数1：队列名称  参数2: 是否持久化  参数3:是否独占队列 参数4:是否自动删除  参数5:其他属性
+  channel.queueDeclare("hello",false, false, false, null);
+  //交换机名称  队列  传递消息的格外设置  消息
   channel.basicPublish("","hello", null,"hello rabbitmq".getBytes());
   channel.close();
   connection.close();
@@ -347,10 +348,17 @@ queue：消息队列，图中红色部分。类似一个邮箱，可以缓存消
 ```c
 channel.queueDeclare("hello",true,false,false,null);
 '参数1':用来声明通道对应的队列
-'参数2':用来指定是否持久化队列
-'参数3':用来指定是否独占队列
-'参数4':用来指定是否自动删除队列
+'参数2':用来指定是否持久化队列，true，rabbitMq重启队列还在
+'参数3':用来指定是否独占队列，只能由一个连接绑定
+'参数4':用来指定队列中没有消息（且没有连接与此队列绑定）的时候是否自动删除队列
 '参数5':对队列的额外配置
+
+channel.basicPublish("", "hello", MessageProperties.PERSISTENT_TEXT_PLAIN, "bye".getBytes());
+'参数1':交换机名称
+'参数2':用来声明通道对应的队列
+'参数3':消息的额外设置
+    MessageProperties.PERSISTENT_TEXT_PLAIN 持久化消息
+'参数4':消息
 
 ```
 
@@ -376,11 +384,18 @@ C2：消费者-2：领取任务并完成任务，假设完成速度快
 ### 开发生产者
 
 ```java
-channel.queueDeclare("hello", true, false, false, null);
-for (int i = 0; i < 10; i++) {
-  channel.basicPublish("", "hello", null, (i+"====>:我是消息").getBytes());
-}
+public class Provider {
 
+    public static void main(String[] args) throws IOException {
+        Connection connection = RabbitMQUtils.getConnection();
+        Channel channel = connection.createChannel();
+        channel.queueDeclare("worker", true, false, false, null);
+        for (int i = 0; i < 10; i++) {
+            channel.basicPublish("", "worker", null, ("hello-" + i).getBytes());
+        }
+        RabbitMQUtils.close(channel, connection);
+    }
+}
 ```
 
 ### 开发消费者-1
@@ -420,10 +435,9 @@ channel.basicConsume("hello",true,new DefaultConsumer(channel){
 
 ![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504170803.png)
 
-```c
-总结:默认情况下，RabbitMQ将按顺序将每个消息发送给下一个使用者。平均而言，每个消费者都会收到相同数量的消息。这种分发消息的方式称为循环。
-
-```
+> 总结: 默认情况下，RabbitMQ将按==顺序==将每个消息发送给下一个使用者。平均而言，每个消费者都会收到==相同数量==的消息。这种分发消息的方式称为==循环==。
+>
+> 但是这种情况会==导致处理快的闲下来，而处理慢的处理不完==。
 
 ### 消息自动确认机制
 
@@ -434,12 +448,14 @@ But we don't want to lose any tasks. If a worker dies, we'd like the task to be 
 ```
 
 ```java
-channel.basicQos(1);//一次只接受一条未确认的消息
+//channel一次只接受一条未确认的消息
+channel.basicQos(1);
 //参数2:关闭自动确认消息
 channel.basicConsume("hello",false,new DefaultConsumer(channel){
   @Override
   public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
     System.out.println("消费者1: "+new String(body));
+     // 参数1：消息id  参数2：是否一次性确认多条消息
     channel.basicAck(envelope.getDeliveryTag(),false);//手动确认消息
   }
 });
@@ -449,7 +465,7 @@ channel.basicConsume("hello",false,new DefaultConsumer(channel){
 ```c
 设置通道一次只能消费一个消息
 
-关闭消息的自动确认,开启手动确认消息
+关闭消息的自动确认, 开启手动确认消息
 
 ```
 
@@ -461,31 +477,33 @@ channel.basicConsume("hello",false,new DefaultConsumer(channel){
 
 ```c
 fanout 扇出 也称为广播
-
 ```
 
 ![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504171039.png)
 
-```c
 在广播模式下，消息发送流程是这样的：
 
-可以有多个消费者
-每个消费者有自己的queue（队列）
-每个队列都要绑定到Exchange（交换机）
-生产者发送的消息，只能发送到交换机，交换机来决定要发给哪个队列，生产者无法决定。
-交换机把消息发送给绑定过的所有队列
-队列的消费者都能拿到消息。实现一条消息被多个消费者消费
-
-```
+- 可以有多个消费者每个消费者有自己的queue（队列）
+- 每个队列都要绑定到Exchange（交换机）
+- 生产者发送的消息，只能发送到交换机，交换机来决定要发给哪个队列，生产者无法决定。
+- 交换机把消息发送给绑定过的所有队列
+- 队列的消费者都能拿到消息。实现一条消息被多个消费者消费
 
 ### 开发生产者
 
 ```java
-//声明交换机
-channel.exchangeDeclare("logs","fanout");//广播 一条消息多个消费者同时消费
-//发布消息
-channel.basicPublish("logs","",null,"hello".getBytes());
+public class Provider {
+    public static void main(String[] args) throws IOException {
+        Connection connection = RabbitMQUtils.getConnection();
+        Channel channel = connection.createChannel();
+        //与交换机绑定  参数1：交换机名称  参数2：交换机类型 fanout=广播
+        channel.exchangeDeclare("logs", "fanout");
+        // 发送消息给交换机，而不是队列，所以队列名字为空 
+        channel.basicPublish("logs", "", null, "fanout type message".getBytes());
 
+        RabbitMQUtils.close(channel, connection);
+    }
+}
 ```
 
 ### 开发消费者-1
@@ -555,17 +573,14 @@ channel.basicConsume(queue,true,new DefaultConsumer(channel){
 
 ### Routing 之订阅模型-Direct(直连)
 
-```c
-在Fanout模式中，一条消息，会被所有订阅的队列都消费。但是，在某些场景下，我们希望不同的消息被不同的队列消费。这时就要用到Direct类型的Exchange。
-
+在==Fanout==模式中，==一条消息==，会被==所有订阅的队列都消费==。但是，在某些场景下，我们希望==不同的消息==被==不同的队列消费==。这时就要用到==Direct==类型的Exchange。
 
 在Direct模型下：
-队列与交换机的绑定，不能是任意绑定了，而是要指定一个RoutingKey（路由key）
-消息的发送方在 向 Exchange发送消息时，也必须指定消息的 RoutingKey。
 
-Exchange不再把消息交给每一个绑定的队列，而是根据消息的Routing Key进行判断，只有队列的Routingkey与消息的 Routing key完全一致，才会接收到消息
+- 队列与交换机的绑定，不能是任意绑定了，而是要指定一个`RoutingKey`（路由key）
+- 消息的发送方在 向 Exchange发送消息时，也必须指定消息的 `RoutingKey`。
 
-```
+- Exchange不再把消息交给每一个绑定的队列，而是根据消息`Routingkey`的进行判断，只有队列的`Routingkey`与消息的 `Routingkey`完全一致，才会接收到消息
 
 ![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504171251.png)
 
@@ -579,12 +594,19 @@ C2：消费者，其所在队列指定了需要routing key 为 info、error、wa
 ### 开发生产者
 
 ```java
-//声明交换机  参数1:交换机名称 参数2:交换机类型 基于指令的Routing key转发
-channel.exchangeDeclare("logs_direct","direct");
-String key = "";
-//发布消息
-channel.basicPublish("logs_direct",key,null,("指定的route key"+key+"的消息").getBytes());
+public static void main(String[] args) throws IOException {
+        Connection connection = RabbitMQUtils.getConnection();
+        Channel channel = connection.createChannel();
+    //声明交换机  参数1:交换机名称 参数2:交换机类型 基于指令的Routing key转发
+        channel.exchangeDeclare("logs_direct", "direct");
 
+        String routingKey1 = "info";
+        String routingKey2 = "error";
+        channel.basicPublish("logs_direct", routingKey1, null, ("这是基于" + routingKey1 + "的消息").getBytes());
+        channel.basicPublish("logs_direct", routingKey2, null, ("这是基于" + routingKey2 + "的消息").getBytes());
+        RabbitMQUtils.close(channel, connection);
+
+    }
 ```
 
 ### 开发消费者-1
@@ -636,20 +658,19 @@ channel.basicConsume(queue,true,new DefaultConsumer(channel){
 
 ![image-20210504171428624](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504171428.png)
 
+==注意：==但一个消息的`RoutingKey`没有匹配到任意的Channel的`RoutingKey`时，这个消息将不会被消费
+
 ## Routing 之订阅模型-Topic
 
-```c
-Topic类型的Exchange与Direct相比，都是可以根据RoutingKey把消息路由到不同的队列。只不过Topic类型Exchange可以让队列在绑定Routing key的时候使用通配符！这种模型Routingkey 一般都是由一个或多个单词组成，多个单词之间以”.”分割，例如： item.insert
-
-```
+​		Topic类型的Exchange与Direct相比，都是可以根据`RoutingKey`把消息路由到不同的队列。只不过==Topic==类型Exchange可以让队列在绑定Routing key的时候==使用通配符==！这种模型`Routingkey` 一般都是由一个或多个单词组成，==多个单词之间以”.”分割==，例如： `item.insert`
 
 ![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504171526.png)
 
-```c
-# 统配符
-		* (star) can substitute for exactly one word.    匹配不多不少恰好1个词
-		# (hash) can substitute for zero or more words.  匹配一个或多个词
-# 如:
+```
+统配符
+		* (star) can substitute for exactly one word.    匹配不多不少恰好1个单词
+		# (hash) can substitute for zero or more words.  匹配一个或多个单词
+如:
 		audit.#    匹配audit.irs.corporate或者 audit.irs 等
     audit.*   只能匹配 audit.irs
 
@@ -762,7 +783,8 @@ private RabbitTemplate rabbitTemplate;
 
 @Test
 public void testHello(){
-  rabbitTemplate.convertAndSend("hello","hello world");
+    // routingKey, Object
+  rabbitTemplate.convertAndSend("hello", "hello world");
 }
 
 ```
@@ -792,9 +814,9 @@ private RabbitTemplate rabbitTemplate;
 
 @Test
 public void testWork(){
- for (int i = 0; i < 10; i++) {
-   rabbitTemplate.convertAndSend("work","hello work!");
- }
+     for (int i = 0; i < 10; i++) {
+           rabbitTemplate.convertAndSend("work","hello work!");
+     }
 }
 
 ```
@@ -831,7 +853,8 @@ private RabbitTemplate rabbitTemplate;
 
 @Test
 public void testFanout() throws InterruptedException {
-  rabbitTemplate.convertAndSend("logs","","这是日志广播");
+    // 交换机名称 routingKey  Object
+  rabbitTemplate.convertAndSend("logs", "", "这是日志广播");
 }
 
 ```
@@ -843,7 +866,7 @@ public void testFanout() throws InterruptedException {
 public class FanoutCustomer {
 
    @RabbitListener(bindings = @QueueBinding(
-           value = @Queue,
+           value = @Queue, // 临时队列
            exchange = @Exchange(name="logs",type = "fanout")
    ))
    public void receive1(String message){
@@ -956,30 +979,19 @@ public void testTopic(){
 
 ## 异步处理
 
-> 场景说明：用户注册后，需要发注册邮件和注册短信,传统的做法有两种
->
->  	1.串行的方式 
->
-> ​	 2.并行的方式
+场景说明：用户注册后，需要==发注册邮件==和==注册短信==,传统的做法有两种：串行的方式 ，并行的方式
 
-```c
-串行方式: 将注册信息写入数据库后,发送注册邮件,再发送注册短信,以上三个任务全部完成后才返回给客户端。 这有一个问题是,邮件,短信并不是必须的,它只是一个通知,而这种做法让客户端等待没有必要等待的东西. 
-```
+==串行方式:== 将注册信息写入数据库后，发送注册邮件，再发送注册短信，以上三个任务全部完成后才返回给客户端。 这有一个问题是，邮件，短信并不是必须的，它只是一个通知，而这种做法==让客户端等待没有必要等待的东西。== 
 
-![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504172525.png)
+<img src="https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210506103827.png" alt="image-20210506103820154" style="zoom:150%;" />
 
-```c
-并行方式: 将注册信息写入数据库后,发送邮件的同时,发送短信,以上三个任务完成后,返回给客户端,并行的方式能提高处理的时间。 
-```
+==并行方式==: 将注册信息写入数据库后,发送邮件的同时，发送短信，以上三个任务完成后，返回给客户端，并行的方式能提高处理的时间。 
 
-![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504172537.png)
+<img src="https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210506103950.png" alt="image-20210506103950684" style="zoom:150%;" />
 
-```c
-消息队列：假设三个业务节点分别使用50ms，串行方式使用时间150ms，并行使用时间100ms。虽然并行已经提高的处理时间，但是，前面说过，邮件和短信对我正常的使用网站没有任何影响，客户端没有必要等着其发送完成才显示注册成功，应该是写入数据库后就返回。
+==消息队列：==假设三个业务节点分别使用50ms，串行方式使用时间150ms，并行使用时间100ms。虽然并行已经提高的处理时间，但是，前面说过，邮件和短信对我正常的使用网站没有任何影响，客户端没有必要等着其发送完成才显示注册成功，应该是写入数据库后就返回。
     
-消息队列: 引入消息队列后，把发送邮件，短信不是必须的业务逻辑异步处理 
-
-```
+==消息队列:== 引入消息队列后，把发送邮件，短信不是必须的业务逻辑异步处理 
 
 ![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504172653.jpeg)
 
@@ -993,50 +1005,34 @@ public void testTopic(){
 
 ##  应用解耦
 
-```c
-场景：双11是购物狂节,用户下单后,订单系统需要通知库存系统,传统的做法就是订单系统调用库存系统的接口. 
-```
+==场景：双11是购物狂节，用户下单后，订单系统需要通知库存系统，传统的做法就是订单系统调用库存系统的接口。==
 
+<img src="https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210506104348.png" alt="image-20210506104340862" style="zoom:150%;" />
 
-![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504172804.png)
+这种做法有一个缺点：当库存系统出现故障时，订单就会失败。 订单系统和库存系统高耦合。  引入消息队列 
 
-```c
-这种做法有一个缺点:
-当库存系统出现故障时,订单就会失败。 订单系统和库存系统高耦合.  引入消息队列 
+<img src="https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210506104442.png" alt="image-20210506104442519" style="zoom:150%;" />
 
-```
+==订单系统==：用户下单后，订单系统完成持久化处理，将消息写入消息队列，返回用户订单下单成功。
 
-
-![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504172820.png)
-
-```c
-订单系统:用户下单后,订单系统完成持久化处理,将消息写入消息队列,返回用户订单下单成功。
-
-库存系统:订阅下单的消息,获取下单消息,进行库操作。  就算库存系统出现故障,消息队列也能保证消息的可靠投递,不会导致消息丢失.
-
-```
+==库存系统==：订阅下单的消息，获取下单消息,进行库操作。  就算库存系统出现故障，消息队列也能保证消息的可靠投递，不会导致消息丢失。
 
 ##  流量削峰
 
-```c
-场景: 秒杀活动，一般会因为流量过大，导致应用挂掉,为了解决这个问题，一般在应用前端加入消息队列。  
+==场景: 秒杀活动，一般会因为流量过大，导致应用挂掉,为了解决这个问题，一般在应用前端加入消息队列。==  
 
-作用:
+==作用:==
 
-	1.可以控制活动人数，超过此一定阀值的订单直接丢弃(我为什么秒杀一次都没有成功过呢^^) 
+- 可以控制活动人数，超过此一定阀值的订单直接丢弃(我为什么秒杀一次都没有成功过呢^^) 
 
-	2.可以缓解短时间的高流量压垮应用(应用程序按自己的最大处理能力获取订单) 
-	
-```
+- 可以缓解短时间的高流量压垮应用(应用程序按自己的最大处理能力获取订单) 
 
 
-![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504172913.png)
+![image-20210506104603604](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210506104603.png)
 
-```c
-1.用户的请求,服务器收到之后,首先写入消息队列,加入消息队列长度超过最大值,则直接抛弃用户请求或跳转到错误页面.  
+1.用户的请求，服务器收到之后，首先写入消息队列，加入==消息队列长度超过最大值==，则直接==抛弃==用户请求或跳转到错误页面。  
 
-2.秒杀业务根据消息队列中的请求信息，再做后续处理.
-```
+2.秒杀业务根据消息队列中的请求信息，再做后续处理。
 
 
 
@@ -1057,9 +1053,9 @@ All data/state required for the operation of a RabbitMQ broker is replicated acr
 
 ![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504173014.png)
 
-```c
-核心解决问题:  当集群中某一时刻master节点宕机,可以对Quene中信息,进行备份
-```
+注意：队里仅仅存在于master节点中
+
+==核心解决问题==:  当集群中某一时刻master节点宕机,可以对Quene中信息,进行备份
 
 
 
@@ -1144,9 +1140,10 @@ All data/state required for the operation of a RabbitMQ broker is replicated acr
 This guide covers mirroring (queue contents replication) of classic queues  --摘自官网
 
 By default, contents of a queue within a RabbitMQ cluster are located on a single node (the node on which the queue was declared). This is in contrast to exchanges and bindings, which can always be considered to be on all nodes. Queues can optionally be made *mirrored* across multiple nodes. --摘自官网
-镜像队列机制就是将队列在三个节点之间设置主从关系，消息会在三个节点之间进行自动同步，且如果其中一个节点不可用，并不会导致消息丢失或服务不可用的情况，提升MQ集群的整体高可用性。
-		
+
 ```
+
+==镜像队列机制就是将队列在三个节点之间设置主从关系，消息会在三个节点之间进行自动同步，且如果其中一个节点不可用，并不会导致消息丢失或服务不可用的情况，提升MQ集群的整体高可用性。==
 
 #### 集群架构图
 
