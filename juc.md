@@ -1098,7 +1098,7 @@ public static ExecutorService newCachedThreadPool() {
      */
     public ThreadPoolExecutor(int corePoolSize,// 线程池中的常驻核心线程数，可为0
                               int maximumPoolSize,// 线程池中能够容纳同时执行的最大线程数，必须大于等于1
-                              long keepAliveTime, // 多余的空闲线程的存活时间，当线程池中的线程数量超过maximumPoolSize												  时，当空闲时间达到keepAliveTime时，多余的线程会被销毁知道线程池中的												   线程数量达到corePoolSize为止
+                              long keepAliveTime, // 多余的空闲线程的存活时间，当线程池中的线程数量超过        														maximumPoolSize时，当空闲时间达到keepAliveTime时，多余														的线程会被销毁知道线程池中的线程数量达到corePoolSize为止
                               TimeUnit unit, // keepAliveTime的时间单位
                               BlockingQueue<Runnable> workQueue, // 任务队列，被提交但未被执行的队列
                               ThreadFactory threadFactory, // 表示生成线程池中工作线程的线程工厂，用于创建线程，一般默认
