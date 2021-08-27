@@ -1,4 +1,4 @@
-# 数据结构
+#                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    数据结构
 
 ## 数组
 
@@ -60,7 +60,7 @@ public int duplicate(int []numbers){
 
 #### 方法二
 
-把数组分为1~n中间的m为两部分，统计数组中1~m的元素的个数，如果超过m，则证明这个范围内的元素有重复，继续减治。时间O(nlogn)，空间O(1)，相当于时间换空间。
+把数组分为1~n中间的m为两部分，统计数组中大小在 1~m 的元素的个数，如果超过m，则证明这个范围内的元素有重复，继续减治。时间O(nlogn)，空间O(1)，相当于时间换空间。
 
 ````java
 public class Solution {
@@ -153,7 +153,7 @@ public class Solution {
 
 #### 方法二
 
-也可以取左上角元素
+也可以取左上角元素 
 
 
 
@@ -872,7 +872,7 @@ public class Solution {
 ````java
 public class Solution {
     private void PrintMaxOfNdigits(int[] number,int length,int index){
-        if(index ==length-1){
+        if(index == length-1){
             PrintNumber(number);
             return;
         }
@@ -978,20 +978,20 @@ public class Solution {
 ```
 
 ```java
-递归算法逻辑关系分析：
+递归算法逻辑关系分析（i表达式索引，j输入串索引）：
 一、如果模式串存在下一个字符，且下个字符是∗
 1.如果字符串当前字符和模式串当前字符匹配：
-1⃣️ 认为∗前面的字符出现0次，i不变,j+2
-2⃣️ 认为∗前面的字符出现1次，i+1，j+1
-3⃣️ 认为∗前面的字符出现多次，i+1，j不变
+	1⃣️ 认为∗前面的字符出现0次，i不变,j+2
+	2⃣️ 认为∗前面的字符出现1次，i+1，j+1
+	3⃣️ 认为∗前面的字符出现多次，i+1，j不变
 2.如果字符串当前字符和模式串当前字符不匹配
-1⃣️ 认为∗前面的字符出现0次，i不变，j+2
+	1⃣️ 认为∗前面的字符出现0次，i不变，j+2
     
 二、如果下个字符不是∗：
 1.如果字符串当前字符和模式串当前字符匹配
-1⃣️ 匹配下个字符，i+1，j+1
-2. 如果字符串当前字符和模式串当前字符不匹配
-1⃣️ 字符串和模式串不匹配
+	1⃣️ 匹配下个字符，i+1，j+1
+2.如果字符串当前字符和模式串当前字符不匹配
+	1⃣️ 字符串和模式串不匹配
 
 public class Solution {
     public boolean match(String str, String pattern) {
@@ -1021,7 +1021,7 @@ public class Solution {
                 return matchCore(str, strIndex, pattern, patternIndex + 2);
             }
         }
-        /*如果下一个字符不是'*'*/
+        //*如果下一个字符不是'*'
         //当前字符是匹配的
         if (strIndex != str.length && (str[strIndex] == pattern[patternIndex] || pattern[patternIndex] == '.')){
 
