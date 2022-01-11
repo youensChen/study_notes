@@ -363,7 +363,7 @@ get count
 
 ```
 
-#### 步长增减
+#### 步长增减incrby 
 
 ```bash
 get count
