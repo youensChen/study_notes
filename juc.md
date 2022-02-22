@@ -387,7 +387,7 @@ public static void main(String[] args) throws Exception {
 [5fa029e6, null, 9dba79e7]
 [5fa029e6, null, 9dba79e7]
 [5fa029e6, null, 9dba79e7]
-//此时程序并没有保存，而当我们提高线程数量时
+//此时程序并没有报错，而当我们提高线程数量时
 //将会报错 java.util.ConcurrentModificationException
 
 ```
@@ -555,20 +555,27 @@ public static void main(String[] args) throws Exception {
         for (int i = 0; i < 6; i++) {
             new Thread(() -> {
                 System.out.println(Thread.currentThread().getName()+"\t离开教室");
-                countDownLatch.countDown(); //计数器减1
+                countDownLatch.countDown(); //计数器减1 线程不阻塞
+                System.out.println(Thread.currentThread().getName()+"\t回家吃饭");
             }, String.valueOf(i)).start();
         }
         //需求，main线程要在其他线程执行完后才退出
         countDownLatch.await(); //等待计数器为0
-        System.out.println(Thread.currentThread().getName()+"\t离开教室");
+        System.out.println(Thread.currentThread().getName()+"\t离开教室回家吃饭");
     }
 0	离开教室
-3	离开教室
-1	离开教室
-2	离开教室
-5	离开教室
 4	离开教室
-main	离开教室
+4	回家吃饭
+3	离开教室
+3	回家吃饭
+2	离开教室
+2	回家吃饭
+1	离开教室
+1	回家吃饭
+0	回家吃饭
+5	离开教室
+5	回家吃饭
+main	离开教室回家吃饭
 ```
 
 ## CyclicBarrier循环栅栏
@@ -586,7 +593,8 @@ public static void main(String[] args){
             new Thread(() -> {
                 System.out.println(Thread.currentThread().getName()+"\t找到第"+ finalI +"颗龙珠");
                 try {
-                    cyclicBarrier.await();// 等待集齐龙珠
+                    cyclicBarrier.await();// 等待集齐龙珠 线程阻塞
+                    System.out.println(Thread.currentThread().getName()+"：\t 收集完龙珠 欧耶");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (BrokenBarrierException e) {
@@ -603,7 +611,13 @@ public static void main(String[] args){
 5	找到第5颗龙珠
 7	找到第7颗龙珠
 集齐7颗龙珠，召唤神龙
-
+3：	 收集完龙珠 欧耶
+1：	 收集完龙珠 欧耶
+2：	 收集完龙珠 欧耶
+4：	 收集完龙珠 欧耶
+7：	 收集完龙珠 欧耶
+5：	 收集完龙珠 欧耶
+6：	 收集完龙珠 欧耶
 ```
 
 
@@ -961,6 +975,28 @@ public static void main(String[] args) {
             threadPool.shutdown();
         }
     }
+
+pool-1-thread-2占用线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-5占用线程
+pool-1-thread-5离开线程
+pool-1-thread-4占用线程
+pool-1-thread-3占用线程
+pool-1-thread-5占用线程
+pool-1-thread-3离开线程
+pool-1-thread-3占用线程
+pool-1-thread-3离开线程
+pool-1-thread-3占用线程
+pool-1-thread-4离开线程
+pool-1-thread-2离开线程
+pool-1-thread-3离开线程
+pool-1-thread-5离开线程
+pool-1-thread-1离开线程
+pool-1-thread-4占用线程
+pool-1-thread-4离开线程
+
 ```
 
 ### SingleThreadExecutor
@@ -984,6 +1020,27 @@ public static void main(String[] args) {
             threadPool.shutdown();
         }
     }
+
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
+pool-1-thread-1占用线程
+pool-1-thread-1离开线程
 ```
 
 
@@ -1098,7 +1155,7 @@ public static ExecutorService newCachedThreadPool() {
      */
     public ThreadPoolExecutor(int corePoolSize,// 线程池中的常驻核心线程数，可为0
                               int maximumPoolSize,// 线程池中能够容纳同时执行的最大线程数，必须大于等于1
-                              long keepAliveTime, // 多余的空闲线程的存活时间，当线程池中的线程数量超过        														maximumPoolSize时，当空闲时间达到keepAliveTime时，多余														的线程会被销毁知道线程池中的线程数量达到corePoolSize为止
+                              long keepAliveTime, // 多余的空闲线程的存活时间，当线程池中的线程数量超过        														corePoolSize，当空闲时间达到keepAliveTime时，多余														的线程会被销毁知道线程池中的线程数量达到corePoolSize为止
                               TimeUnit unit, // keepAliveTime的时间单位
                               BlockingQueue<Runnable> workQueue, // 任务队列，被提交但未被执行的队列
                               ThreadFactory threadFactory, // 表示生成线程池中工作线程的线程工厂，用于创建线程，一般默认
@@ -1311,6 +1368,7 @@ class MyTask extends RecursiveTask<Integer> {
 }
 
 public class Main {
+   // 多线程计算0到100的累计和
    public static void main(String[] args) throws Exception {
         MyTask myTask = new MyTask(0, 100);
         ForkJoinPool threadPool = new ForkJoinPool();

@@ -57,10 +57,10 @@ base64UrlEncode(Header) + "." + base64UrlEncode(Claims),
 ```json
 {
     "iss": "John Wu JWT",
-    "iat": 1441593502,
-    "exp": 1441594722,
-    "aud": "www.example.com",
     "sub": "jrocket@example.com",
+    "aud": "www.example.com",
+    "exp": 1441594722,
+    "iat": 1441593502,
     "from_user": "B",
     "target_user": "A"
 }
@@ -73,6 +73,8 @@ base64UrlEncode(Header) + "." + base64UrlEncode(Claims),
 - aud: 接收该JWT的一方
 - exp(expires): 什么时候过期，这里是一个Unix时间戳
 - iat(issued at): 在什么时候签发的
+- **nbf**: 定义在什么时间之前，该jwt都是不可用的.
+- **jti**: jwt的唯一身份标识，主要用来作为一次性token,从而回避重放攻击。
 
 这些定义都可以在标准中找到。
 
@@ -116,16 +118,26 @@ eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9
 
 ### 签名（签名）
 
-将上面的两个编码后的字符串都用句号.连接在一起（头部在前），就形成了
+jwt的第三部分是一个签证信息，这个签证信息由三部分组成：
+
+- header (base64后的)
+- payload (base64后的)
+- secret
+
+这个部分需要base64加密后的header和base64加密后的payload使用`.`连接组成的字符串，然后通过header中声明的加密方式进行加盐`secret`组合加密，然后就构成了jwt的第三部分。
+
+```js
+// javascript
+var encodedString = base64UrlEncode(header) + '.' + base64UrlEncode(payload);
+//base64UrlEncode(header)   eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9
+//base64UrlEncode(payload)  eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9
+var signature = HMACSHA256(encodedString, 'secret'); // TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ
+```
+
+将这三部分用`.`连接成一个完整的字符串,构成了最终的jwt:
 
 ```
-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcm9tX3VzZXIiOiJCIiwidGFyZ2V0X3VzZXIiOiJBIn0
-```
-
-最后，我们将上面拼接完的字符串用HS256算法进行加密。在加密的时候，我们还需要提供一个密钥（secret）。如果我们用mystar作为密钥的话，那么就可以得到我们加密后的内容
-
-```
-rSWamyAYwuHCo7IFAgd1oRpSP7nzL7BF5t7ItqpKViM
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ
 ```
 
 这一部分又叫做**签名**。
@@ -152,6 +164,12 @@ https://your.awesome-app.com/make-friend/?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1Ni
 2. Base64是一种编码，是可逆的，那么我的信息不就被暴露了吗？
 
 让我逐一为你说明。
+
+
+
+服务端会验证token，如果验证通过就会返回相应的资源。整个流程就是这样的:
+
+![image-20220111115714715](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220111115714.png)
 
 ## 签名的目的
 
@@ -245,3 +263,34 @@ Set-Cookie: jwt=lll.zzz.xxx; HttpOnly; max-age=980000; domain=.taobao.com
 ```
 
 注意domain必须设置为一个点加顶级域名，即.taobao.com。这样，taobao.com和*.taobao.com就都可以接受到这个Cookie，并获取JWT了。
+
+## jwt的框架：JJWT
+
+JJWT是一个提供端到端的JWT创建和验证的Java库。永远免费和开源(Apache License，版本2.0)，JJWT很容易使用和理解。它被设计成一个以建筑为中心的流畅界面，隐藏了它的大部分复杂性。
+
+- JJWT的目标是最容易使用和理解用于在JVM上创建和验证JSON Web令牌(JWTs)的库。
+- JJWT是基于JWT、JWS、JWE、JWK和JWA RFC规范的Java实现。
+- JJWT还添加了一些不属于规范的便利扩展，比如JWT压缩和索赔强制。
+
+#### 规范兼容:
+
+- 创建和解析明文压缩JWTs
+- 创建、解析和验证所有标准JWS算法的数字签名紧凑JWTs(又称JWSs):
+- HS256: HMAC using SHA-256
+- HS384: HMAC using SHA-384
+- HS512: HMAC using SHA-512
+- RS256: RSASSA-PKCS-v1_5 using SHA-256
+- RS384: RSASSA-PKCS-v1_5 using SHA-384
+- RS512: RSASSA-PKCS-v1_5 using SHA-512
+- PS256: RSASSA-PSS using SHA-256 and MGF1 with SHA-256
+- PS384: RSASSA-PSS using SHA-384 and MGF1 with SHA-384
+- PS512: RSASSA-PSS using SHA-512 and MGF1 with SHA-512
+- ES256: ECDSA using P-256 and SHA-256
+- ES384: ECDSA using P-384 and SHA-384
+- ES512: ECDSA using P-521 and SHA-512
+
+这里以github上的demo演示，理解原理，集成到自己项目中即可。Spring Boot 基础就不介绍了，推荐下这个实战教程：https://www.javastack.cn/categories/Spring-Boot/
+
+##### 应用采用 spring boot + angular + jwt
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220111111815.webp)

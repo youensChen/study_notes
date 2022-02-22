@@ -187,7 +187,7 @@
 
 #### overview概览
 
-![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504165647.png)
+![](https://cdn.jsdelivr.net/gh/youenschen/picgo/img/20210504165647.png)
 
 ```c
 connections：无论生产者还是消费者，都需要与RabbitMQ建立连接后才可以完成消息的生产和消费，在这里可以查看连接情况`

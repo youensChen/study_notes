@@ -10,7 +10,7 @@
 
 #### Sql Joins 七种方式
 
-![image-20210319104227707](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/image-20210319104227707.png)
+![img](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220112154344.png)
 
 
 
