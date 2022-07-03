@@ -1060,10 +1060,10 @@ public class Solution {
         int i = 0;
         int j = array.length - 1;
         while (i < j) {
-            while (i < j && (array[i] & 0x1) == 1) { (1)
+            while (i < j && (array[i] & 0x1) == 1) { //(1)
                 i++;
             }
-            while (i < j && (array[j] & 0x1) == 0) { (2)
+            while (i < j && (array[j] & 0x1) == 0) { //(2)
                 j--;
             }
             //此种写法可能会导致问题：如果 a 和 b 引用的是同一个变量的话，使用这种方法会使得这个变量变为0。	
@@ -1130,7 +1130,7 @@ public ListNode findKthToTail(ListNode head, int k) {
 ```java
 /**
  * 第一步：判断链表中是否有环。
- *   设置连个指针同时指向头节点，一个指针每次走两步，一个指针每次走一步，如果存在环，则两个指针一定可以相遇，相遇的节点一定是*   *  环内的某一点。
+ *   设置两个指针同时指向头节点，一个指针每次走两步，一个指针每次走一步，如果存在环，则两个指针一定可以相遇，相遇的节点一定是*   *  环内的某一点。
  * 第二部：确定环中节点数目。
  *   从第一步中可以得到环中的一个节点，设置一个指针指向这个节点，遍历环一次，统计出有多少个节点。
  * 第三步：找出环的入口。
@@ -1567,7 +1567,7 @@ public class Solution {
 
 
 
-### 从上到下打印二叉树-P171
+### 从上到下打印二叉树（层序）-P171
 
 ```txt
 宽序遍历二叉树。如下图二叉树，遍历序列为8,6,10,5,7,9,11.
@@ -1742,7 +1742,7 @@ public class Solution {
 }
 ```
 
-### 二叉树中和为某一值得路径-P182
+### 二叉树中和为某一值的路径-P182
 
 <img src="https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210327111203.png" alt="image-20210327110322493" style="zoom:50%;" />
 
@@ -2468,7 +2468,7 @@ public static int findNthDigit(int n) {
     }
 ```
 
-### 把数组排查最小的数-P227
+### 把数组排出最小的数-P227
 
 ```
 输入一个正整数数组，打印数组里所有数字拼接出来最小的数。
@@ -2483,7 +2483,7 @@ public static void printMinNumber(Integer[] numbers) {
 }
 ```
 
-### 把数字翻译成数字-P231
+### 把数字翻译成字母-P231
 
 ```
 给定一个数字，按照规则把它翻译成字符串，0翻译为a，1翻译为b。。。25翻译为z。一个数字可能有多种翻译。如1228可翻译为bccfi、bwfi、bczi、mcfi、mzi。请计算一个数字有多少种不同的翻译方法。
@@ -2946,7 +2946,7 @@ public class Solution {
         if (root == null) {
             return 0;
         }
-        int left = treeDepth(roo	t.left);
+        int left = treeDepth(root.left);
         int right = treeDepth(root.right);
         return (left > right) ? (left + 1) : (right + 1);
     }
@@ -3017,7 +3017,7 @@ public class Solution {
 }
 ```
 
-### 数组中数组出现的次数-P275
+### 数组中数字出现的次数-P275
 
 #### 数组中只出现一次的两个数字
 
@@ -3026,18 +3026,16 @@ public class Solution {
 ```
 一个整型数组里除了两个数字外，其他的数字都出现了两次。找出这两个只出现一次的数字。
 要求时间O(n)，空间O(1)。
-如果只有一个数字出现一次，其他数字都出现两次，对数组里所有数进行异或运算的结果就是那个只出现一次的数字。
 
 
+如果只有一个数字出现一次，其他数字都出现两次，对数组里所有数进行 异或 运算的结果就是那个只出现一次的数字。
 ```
-
-
 
 ```java
 /*
-思路：数组中只有两个数只出现了一次，其他的都出现了一次，那么有没有办法把数组分成两半呢？每一半都是只有一个数字只出现一个，其他数字都出现两次，再通过异或操作既可以找出这两个不同的数了。
+思路：数组中只有两个数只出现了一次，其他的都出现了两次，那么有没有办法把数组分成两半呢？每一半都是只有一个数字只出现一个，其他数字都出现两次，再通过异或操作既可以找出这两个不同的数了。
 
-原数组中所有数异或的结果就是那两个出现了一个的数的异或的结果，异或结果一定不为0，那么结果的二进制中至少有一位为1。找到第一位为1的位置，记为n，以第n位是否为1，将原数组分为两部分即可。
+原数组中所有数异或的结果就是那两个出现了一个的数的异或的结果，异或结果一定不为0，那么结果的二进制中至少有一位为1。找到第一位为1的位置，记为n，以第n位是否为1，判断数组中所有数，将原数组分为两组，然后各组的数字进行异或运算，得到两个只出现一次的数。
 */
 
 public class Solution {
@@ -3062,15 +3060,17 @@ public class Solution {
         return new int[]{res1, res2};
     }
 
+    // 找到一个数的二进制形式中从右到左第一个1的位置
     private int findFirstOneBit(int target) {
         int count = 0;
-        while ((target&1) == 0) {
+        while ((target & 1) == 0) {
             target = target >>> 1;
             count++;
         }
         return count;
     }
-
+	
+    // 判断一个数的二进制形式从右到左的第index未是否为1
     private boolean indexBitIsOne(int number, int index) {
         number = number >>> index;
         return (number & 1) == 1;
@@ -3501,23 +3501,315 @@ public class Solution {
 
 
 
-# ----------------------
-
-
-
-
+# --------新版剑指offer--------------
 
 # 整数
 
+## 整数除法P1
+
+```
+输入两个int型整数，进行除法并返回值。不能使用*、/、%符号，发生溢出，返回最大值。
+```
+
+```java
+/**
+     *
+     * @param dividend 被除数
+     * @param divisor 除数
+     * @return
+     */
+    public static Integer 整数除法(Integer dividend, Integer divisor) {
+        if (divisor == 0) {
+            throw new RuntimeException("除数不能为0");
+        }
+        if (dividend == 0) {
+            return 0;
+        }
+        // 溢出
+        if(dividend==Integer.MIN_VALUE && divisor==-1){
+            return Integer.MAX_VALUE;
+        }
+        int temp = 0;
+        // 负数转正数可能会溢出(Integer.MIN_VALUE)，正数转负数绝对不会溢出
+        if (dividend > 0) {
+            dividend = -dividend;
+            temp++;
+        }
+        if (divisor > 0) {
+            divisor = -divisor;
+            temp++;
+        }
+        // 使用减法实现除法
+
+        Integer res = 整数除法核心算法(dividend, divisor);
+        return temp == 1 ? -res : res;
+    }
+
+	 /**
+     * 算法思想，如15/2，利用减法实现，15可见7次2，所以结果为7，但是时间复杂度为O(n),
+     *      所以除数每次增大系数改为一倍，即2-->4-->8-->16
+     * @param dividend
+     * @param divisor
+     * @return
+     */
+    private static Integer 整数除法核心算法(Integer dividend, Integer divisor) {
+        int res = 0;
+        while (dividend <= divisor) {
+            int divisorTemp = divisor;
+            int resTemp = 1;
+            // divisorTemp >= 0xc0000000 解决Integer.MIN_VALUE / 1 时的情况, <=是因为都是负数
+            while (divisorTemp >= 0xc0000000 && dividend <= divisorTemp + divisorTemp) {
+                divisorTemp += divisorTemp;
+                resTemp+=resTemp;
+            }
+            res += resTemp;
+            dividend -= divisorTemp;
+        }
+
+        return res;
+
+    }
+```
+
+## 二进制加法P5
+
+```
+输入两个二进制字符串，计算他们的和，以二进制字符串的形式输出。
+```
+
+```java
+ublic static String 二进制加法(String a, String b) {
+        if (a == null || b == null || a.length() == 0 || b.length() == 0) {
+            throw new RuntimeException("请输入正确的二进制串");
+        }
+        StringBuilder res = new StringBuilder();
+
+        int i = a.length()-1;
+        int j = b.length() - 1;
+
+        int carry = 0;
+        while (i >= 0 || j >= 0) {
+            int digitA = i >= 0 ? a.charAt(i--) - '0' : 0;
+            int digitB = j >= 0 ? b.charAt(j--) - '0' : 0;
+            int sum = digitA + digitB + carry;
+            carry = sum/2;
+            res.append(sum % 2);
+        }
+        if (carry == 1) {
+            res.append(carry);
+        }
+        return res.reverse().toString();
+    }
+```
+
+## 前n各数中二进制形式中1的个数
+
+``` 
+输入非负数n，将0~n的每个数字的二进制形式中1的个数输出。n为4，输出[0,1,1,2,1]
+```
+
+```java
+public static int[] 前n个数中每个数1的数量(int n) {
+        int[] res = new int[n + 1];
+        // 动态规划， i 的二进制数的1的个数总比 i&(i-1) 的二进制数的1的个数 多1
+        for (int i = 1; i <= n; i++) {
+            res[i] = res[i & (i - 1)] + 1;
+        }
+        return res;
+    }
+
+public static int[] 前n个数中每个数1的数量2(int n) {
+        int[] res = new int[n + 1];
+        // 动态规划 i是偶数时，i和i/2的1的个数一样；i是奇数时，i相当于i/2左移一位再加右边置为1的情况。
+        // i>>1 == i/2, i&1 == i%2
+        for (int i = 1; i <= n; i++) {
+            res[i] = res[i >> 1] + (i & 1);
+        }
+        return res;
+    }
+```
 
 
 
+## 只出现一次的数字
+
+``` 
+一个整数数组中只有一个数字只出现了一次，其他的数字都出现了3次，找出只出现一次的数字。
+```
+
+```java
+/**
+     * 计算所有数字的二进制形式的第i(0~31)为的1的个数，第i位%3不为0代表出现次数为1的数字在第i位为1
+     * @param nums
+     * @return
+     */
+    public static int 数组中只出现一次的数字(int nums[]) {
+        int[] bitSums = new int[32];
+        for (int num : nums) {
+            for (int i = 0; i < 32; i++) {
+                bitSums[i] += num >> (31 - 1) & 1;
+            }
+        }
+        int res = 0;
+        for (int i = 0; i < 32; i++) {
+            res = (res << 1) + bitSums[i] % 3;
+        }
+        return res;
+    }
+```
+
+## 只有一个数字出现m次，其他数字出现n次
+
+```
+使用哈希表空间消耗太大O(n)
+计算所有数字的二进制形式的第i(0~31)为的1的个数，第i位%n不为0代表出现次数为m的数字在第i位为1，空间复杂度O(1)，空间复杂度O(32n)
+要求m不能被n整除
+```
+
+
+
+## 单词长度的最大乘积
+
+> 一个字符串数组只包含小写字母，如果某两个字符串不含有相同的字母，那么计算它们的长度的乘积，求这个数组的最大乘积
+
+```java
+public int naxSum(String[] words) {
+    int[] flags = new int[words.length];
+    for (int i=0; i< words.length;i++) {
+        for (char c : words[i].toCharArray()) {
+            // int有32位，字符串只有26个字母，可用每个int的位来标识某个字母有没有出现过
+            flags[i] |= 1 << (c - '0'); // |= 操作 把某一位置为 1
+        }
+    }
+    int res = 0;
+    for (int i = 0; i < flags.length; i++) {
+        for (int j = i + 1; j < flags.length; j++) {
+            if ((flags[i] & flags[j]) == 0) { // 按位与为0说明两个字符串没有相同的字符
+                res = Math.max(res, words[i].length() * words[j].length());
+            }
+        }
+    }
+    return res;
+}
+```
 
 
 
 # 数组
 
+## 生成随机数组
 
+> 生成[a, b]范围内长度为n的数组，数组内的数字不重复
+
+```java
+/**
+     * 随机指定范围内N个不重复的数
+     * 在初始化的无重复待选数组中随机产生一个数放入结果中，
+     * 将待选数组被随机到的数，用待选数组(len-1)下标对应的数替换
+     * 然后从len-2里随机产生下一个随机数，如此类推
+     *
+     * @param max 指定范围最大值
+     * @param min 指定范围最小值
+     * @param n   随机数个数
+     * @return int[] 随机数结果集
+     */
+    public static int[] randomArray(int min, int max, int n) {
+        int len = max - min + 1;
+
+        if (max < min || n > len) {
+            return null;
+        }
+
+        //初始化给定范围的待选数组
+        int[] source = new int[len];
+        for (int i = min; i < min + len; i++) {
+            source[i - min] = i;
+        }
+
+        int[] result = new int[n];
+        Random rd = new Random();
+        int index = 0;
+        for (int i = 0; i < result.length; i++) {
+            //待选数组0到(len--)随机一个下标，len控制待选数组的右边界
+            index = Math.abs(rd.nextInt() % len--);
+            //将随机到的数放入结果集
+            result[i] = source[index];
+            //将待选数组中被随机到的数，用待选数组(len-1)下标对应的数替换
+            // 去掉已选择的数，同时将右边界的数左移
+            source[index] = source[len];
+        }
+        return result;
+    }
+```
+
+## 排序数组中两数的和
+
+>一个排序数组，有且只有两个数的和target，同一个数字不能使用两次，找出这两个数字的下标。
+
+```java
+// 双指针法
+public static int[] getIndex(int[] nums, int target) {
+    int left = 0;
+    int right = nums.length - 1;
+    while (left < right && nums[left] + nums[right] == target) {
+        if (nums[left] + nums[right] > target) {
+            right--;
+        }else {
+            left++;
+        }
+    }
+    return new int[]{left, right};
+}
+```
+
+## 数组中和为零的三个数
+
+![image-20220320232011046](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203202320130.png)
+
+```java
+/*
+1、排序
+2、固定一个数字，用双指针法找出另外两个数字
+3、跳过重复元祖
+*/
+public static void main(String[] args) {
+    int[] nums = new int[]{-1, 0, 1, 2, -1, -1};
+    List<List<Integer>> res = new ArrayList<List<Integer>>();
+    if (nums.length >= 3) {
+        Arrays.sort(nums);
+        for (int i = 0; i < nums.length-2;) {
+            threeSum(nums, i, res);
+            int temp = nums[i];
+            // 跳过重复的
+            while (nums[i] == temp) {
+                i++;
+            }
+        }
+    }
+}
+
+public static void threeSum(int[] nums, int i, List<List<Integer>> res) {
+
+    int left = i + 1;
+    int right = nums.length - 1;
+    while (left < right) {
+        if (nums[i] + nums[left] + nums[right] == 0) {
+            res.add(Arrays.asList(nums[i], nums[left], nums[right]));
+            int temp = nums[left];
+            // 跳过重复的
+            while (nums[left] == temp) {
+                left++;
+            }
+        }
+        else if (nums[i] + nums[left] + nums[right] > 0) {
+            right--;
+        } else {
+            left++;
+        }
+    }
+}
+
+```
 
 
 

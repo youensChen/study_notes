@@ -273,6 +273,8 @@ show variables like '%long_query_time%';
 
 展现进程
 
+![image-20220225005923787](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220225005930.png)
+
 ```sql
 -- 出现死锁
 show processlist

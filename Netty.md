@@ -961,7 +961,7 @@ public static void main(String[] args) throws IOException {
 
 
 
-统计 jar 的数目
+##### 统计 jar 的数目
 
 ```java
 Path path = Paths.get("C:\\Program Files\\Java\\jdk1.8.0_91");
@@ -981,7 +981,7 @@ System.out.println(fileCount); // 724
 
 
 
-删除多级目录
+##### 删除多级目录
 
 ```java
 Path path = Paths.get("d:\\a");
@@ -1063,7 +1063,7 @@ System.out.println(end - start);
 
 ## 网络编程
 
-### 4.1 非阻塞 vs 阻塞
+### 4.1 阻塞 vs 非阻塞
 
 #### 阻塞
 
@@ -2155,6 +2155,16 @@ public class UdpClient {
 
 ### 5.2 IO 模型
 
+磁盘IO
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220307201021.png)
+
+网络io
+
+![](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220307201028.png)
+
+
+
 **==同步阻塞（对应阻塞io模型）==**
 
 **==同步非阻塞（对应非阻塞io模型）==**
@@ -2177,37 +2187,198 @@ public class UdpClient {
 
 ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155529.png)
 
-* 阻塞 IO
+#### 同步阻塞 IO
 
-  ![image-20210405153156134](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405153156.png)
+> 用户空间的应用程序执行一个系统调用，这会导致应用程序阻塞，什么也不干，直到数据准备好，并且将数据从内核复制到用户进程，最后进程再处理数据，在等待数据到处理数据的两个阶段，整个进程都被阻塞，不能处理别的网络IO。
+>
+> - 调用应用程序处于一种不再消费 CPU 而只是简单等待响应的状态，因此从处理的角度来看，这是非常有效的。
+>
+> 这也是最简单的IO模型，在通常FD较少、就绪很快的情况下使用是没有问题的。
 
-* 非阻塞  IO
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220307201111.png)
 
-  ![image-20210405153414491](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405153414.png)
+![image-20210405153156134](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405153156.png)
 
-* 多路复用
+#### 同步非阻塞  IO
 
-  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155520.png)
+> 非阻塞的系统调用调用之后，进程并没有被阻塞，内核马上返回给进程，如果数据还没准备好，此时会返回一个error。
+>
+> - 进程在返回之后，可以干点别的事情，然后再发起系统调用。
+> - 重复上面的过程，循环往复的进行系统调用。这个过程通常被称之为轮询。
+> - 轮询检查内核数据，直到数据准备好，再拷贝数据到进程，进行数据处理。
+> - 需要注意，拷贝数据整个过程，进程仍然是属于阻塞的状态。
+> - 这种方式在编程中对Socket设置`O_NONBLOCK`即可。
 
-* 信号驱动
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220307201126.png)
 
-* 异步 IO
+![image-20210405153414491](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210405153414.png)
 
-  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155518.png)
+#### IO多路复用
 
-* 阻塞 IO vs 多路复用
+>IO多路复用，这是一种进程预先告知内核的能力，让内核发现进程指定的一个或多个IO条件就绪了，就通知进程。
+>
+>使得一个进程能在一连串的事件上等待。
+>
+>IO复用的实现方式目前主要有**Select**、**Poll**和**Epoll**。
 
-  ==阻塞io一个线程处理不了多种事件，而多路复用可以==
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220307201323.png)
 
-  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155515.png)
-  
-  ![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155512.png)
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155520.png)
+
+``` java
+// 伪代码描述IO多路复用：
+while(status == OK) { // 不断轮询
+ ready_fd_list = io_wait(fd_list); //内核缓冲区是否有准备好的数据
+ for(fd in ready_fd_list) {
+  data = read(fd) // 有准备好的数据读取到用户缓冲区
+  process(data)
+ }
+}
+```
+
+
+
+#### 信号驱动
+
+> 首先我们允许Socket进行信号驱动IO，并安装一个信号处理函数，进程继续运行并不阻塞。
+>
+> 当数据准备好时，进程会收到一个SIGIO信号，可以在信号处理函数中调用I/O操作函数处理数据。
+>
+> **流程如下：**
+>
+> - 开启套接字信号驱动IO功能
+> - 系统调用Sigaction执行信号处理函数（非阻塞，立刻返回）
+> - 数据就绪，生成Sigio信号，通过信号回调通知应用来读取数据
+>
+> 此种IO方式存在的一个很大的问题：Linux中信号队列是有限制的，如果超过这个数字问题就无法读取数据
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/20220307201616.png)
+
+#### 异步非阻塞
+
+> **异步IO流程如下所示：**
+>
+> - 当用户线程调用了`aio_read`系统调用，立刻就可以开始去做其它的事，用户线程不阻塞
+> - 内核就开始了IO的第一个阶段：准备数据。当内核一直等到数据准备好了，它就会将数据从内核内核缓冲区，拷贝到用户缓冲区
+> - 内核会给用户线程发送一个信号，或者回调用户线程注册的回调接口，告诉用户线程Read操作完成了
+> - 用户线程读取用户缓冲区的数据，完成后续的业务操作
+>
+> **相对于同步IO，异步IO不是顺序执行。**
+>
+> 用户进程进行`aio_read`系统调用之后，无论内核数据是否准备好，都会直接返回给用户进程，然后用户态进程可以去做别的事情。
+>
+> 等到数据准备好了，内核直接复制数据给进程，然后从内核向进程发送通知。
+>
+> **对比信号驱动IO，异步IO的主要区别在于：**
+>
+> - 信号驱动由内核告诉我们何时可以开始一个IO操作(数据在内核缓冲区中)，而异步IO则由内核通知IO操作何时已经完成(数据已经在用户空间中)。
+>
+> 异步IO又叫做事件驱动IO，在Unix中，为异步方式访问文件定义了一套库函数，定义了AIO的一系列接口。
+>
+> - 使用`aio_read`或者`aio_write`发起异步IO操作，使用`aio_error`检查正在运行的IO操作的状态。
+>
+> 目前Linux中AIO的内核实现只对文件IO有效，如果要实现真正的AIO，需要用户自己来实现。
+>
+> 目前有很多开源的异步IO库，例如libevent、libev、libuv。
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203072023756.png)
+
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155518.png)
+
+#### 阻塞 IO vs 多路复用
+
+==阻塞io一个线程处理不了多种事件，而多路复用可以==
+
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155515.png)
+
+![](https://cdn.jsdelivr.net/gh/Youenschang/picgo/img/20210404155512.png)
 
 #### 🔖 参考
 
 UNIX 网络编程 - 卷 I
 
+### Java网络IO模型
 
+#### BIO
+
+BIO是一个典型的网络编程模型，是通常我们实现一个服务端程序的方法，对应Linux内核的同步阻塞IO模型，发送数据和接收数据的过程如下所示：
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203072029303.png)
+
+**步骤如下：**
+
+- 主线程accept请求
+- 请求到达，创建新的线程来处理这个套接字，完成对客户端的响应
+- 主线程继续accept下一个请求
+
+**服务端处理伪代码如下所示：**
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203072029714.png)
+
+这是经典的一个连接对应一个线程的模型，之所以使用多线程，主要原因在于`socket.accept()、socket.read()、socket.write()`三个主要函数都是同步阻塞的。
+
+当一个连接在处理I/O的时候，系统是阻塞的，如果是单线程的话必然就阻塞，但CPU是被释放出来的，开启多线程，就可以让CPU去处理更多的事情。
+
+**其实这也是所有使用多线程的本质：**
+
+> 利用多核，当I/O阻塞时，但CPU空闲的时候，可以利用多线程使用CPU资源。
+
+当面对十万甚至百万级连接的时候，传统的BIO模型是无能为力的。
+
+随着移动端应用的兴起和各种网络游戏的盛行，百万级长连接日趋普遍，此时，必然需要一种更高效的I/O处理模型。
+
+#### NIO
+
+JDK1.4开始引入了NIO类库，主要是使用Selector多路复用器来实现。
+
+> Selector在Linux等主流操作系统上是通过IO复用Epoll实现的。
+
+**NIO的实现流程，类似于Select：**
+
+- 创建ServerSocketChannel监听客户端连接并绑定监听端口，设置为非阻塞模式
+- 创建Reactor线程，创建多路复用器(Selector)并启动线程
+- 将ServerSocketChannel注册到Reactor线程的Selector上，监听Accept事件
+- Selector在线程run方法中无线循环轮询准备就绪的Key
+- Selector监听到新的客户端接入，处理新的请求，完成TCP三次握手，建立物理连接
+- 将新的客户端连接注册到Selector上，监听读操作，读取客户端发送的网络消息
+- 客户端发送的数据就绪则读取客户端请求，进行处理
+
+简单处理模型是用一个单线程死循环选择就绪的事件，会执行系统调用（Linux 2.6之前是Select、Poll，2.6之后是Epoll，Windows是IOCP），还会阻塞的等待新事件的到来。
+
+新事件到来的时候，会在Selector上注册标记位，标示可读、可写或者有连接到来，简单处理模型的伪代码如下所示：
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203072030261.png)
+
+NIO由原来的阻塞读写（占用线程）变成了单线程轮询事件，找到可以进行读写的网络描述符进行读写。
+
+除了事件的轮询是阻塞的（没有可干的事情必须要阻塞），剩余的I/O操作都是纯CPU操作，没有必要开启多线程。
+
+并且由于线程的节约，连接数大的时候因为线程切换带来的问题也随之解决，进而为处理海量连接提供了可能。
+
+#### AIO
+
+JDK1.7引入NIO2.0，提供了异步文件通道和异步套接字通道的实现。
+
+- 其底层在Windows上是通过IOCP实现，在Linux上是通过IO复用Epoll来模拟实现的。
+
+在JAVA NIO框架中，Selector它负责代替应用查询中所有已注册的通道到操作系统中进行IO事件轮询、管理当前注册的通道集合，定位发生事件的通道等操作。
+
+但是在JAVA AIO框架中，由于应用程序不是**轮询**方式，而是订阅-通知方式，所以不再需要Selector（选择器）了，改由Channel通道直接到操作系统注册监听 。
+
+**JAVA AIO框架中，只实现了两种网络IO通道：**
+
+- AsynchronousServerSocketChannel（服务器监听通道）
+- AsynchronousSocketChannel（Socket套接字通道）。
+
+**具体过程如下所示：**
+
+- 创建AsynchronousServerSocketChannel，绑定监听端口
+- 调用AsynchronousServerSocketChannel的accpet方法，传入自己实现的CompletionHandler，包括上一步，都是非阻塞的
+- 连接传入，回调CompletionHandler的completed方法，在里面，调用AsynchronousSocketChannel的read方法，传入负责处理数据的CompletionHandler
+- 数据就绪，触发负责处理数据的CompletionHandler的completed方法，继续做下一步处理即可
+- 写入操作类似，也需要传入CompletionHandler
+
+![Image](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203072031886.png)
 
 ### 5.3 零拷贝
 

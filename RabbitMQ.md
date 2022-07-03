@@ -451,7 +451,7 @@ But we don't want to lose any tasks. If a worker dies, we'd like the task to be 
 //channel一次只接受一条未确认的消息
 channel.basicQos(1);
 //参数2:关闭自动确认消息
-channel.basicConsume("hello",false,new DefaultConsumer(channel){
+channel.basicConsume("hello", false, new DefaultConsumer(channel){
   @Override
   public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
     System.out.println("消费者1: "+new String(body));
@@ -775,6 +775,8 @@ RabbitTemplate用来简化操作    使用时候直接在项目中注入即可�
 
 ## 第一种hello world模型使用
 
+![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203091519315.png)
+
 ### 开发生产者
 
 ```java
@@ -798,13 +800,15 @@ public class HelloCustomer {
 
     @RabbitHandler
     public void receive1(String message){
-    System.out.println("message = " + message);
+    	System.out.println("message = " + message);
     }
 }
 
 ```
 
 ## 第二种work模型使用
+
+![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203091519050.png)
 
 ### 开发生产者
 
@@ -842,8 +846,9 @@ public class WorkCustomer {
 
 
 
-
 ##  Fanout 广播模型
+
+![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203091519345.png)
 
 ### 开发生产者
 
@@ -885,6 +890,8 @@ public class FanoutCustomer {
 ```
 
 ## Route 路由模型
+
+![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203091520635.png)
 
 ### 开发生产者
 
@@ -930,6 +937,8 @@ public class DirectCustomer {
 ```
 
 ## Topic 订阅模型(动态路由模型)
+
+![在这里插入图片描述](https://cdn.jsdelivr.net/gh/youensChen/picgo/img2/202203091520529.png)
 
 ### 开发生产者
 
