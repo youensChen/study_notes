@@ -141,6 +141,14 @@ Pid ! Msg.
 
 ## 删除
 
+### dets:close/1
+
+`close(Name) -> ok | {error | Reason}`
+
+> 关闭表。只有打开表的进程才能关闭表。
+>
+> 在系统停止之前，所有打开的表必须关闭。如果尝试打开未正确关闭的表，Dets 会自动尝试修复该表。
+
 ### delete/0
 
 ` delete(Table) -> true`
@@ -765,13 +773,184 @@ ets:fun2ms(
 
 # gen_tcp
 
+## listen/2
+
+`listen(Port, [Option]) -> {ok, ListenSocket} | {error, Reason}`
+
+> 如果 Port = = 0，则底层操作系统分配一个可用的端口号，使用 inet:Port/1检索它。
+>
+> Option如下
+>
+> - list | binary 接收到的数据包以什么形式传递
+>
+> - {active, true | false | once | N}套接字模式
+> - 主动模式消息格式： `{tcp, Socket, Data}`
+
+## accept/1
+
+`accept(ListenSocket) -> {ok, Socket} | {error, Reason}`
+
+> 相当于`gen_tcp:accept(ListenSocket, infinity)`
+
+## accept/2
+
+`accept(ListenSocket, Timeout) -> {ok, Socket} | {error, Reason}`
+
+> 接受侦听套接字上的传入连接请求。套接字必须是从 listen/2返回的套接字。Timeout 以毫秒为单位指定超时值。默认为`infinity`。
+
+## recv/2
+
+`recv(Socket, Length) -> {ok, Packet} | {error, Reason}`
+
+> 相当于`gen_tcp:recv(Socket, Length, infinity)`
+
+## recv/3
+
+`recv(Socket, Length, Timeout) -> {ok, Packet} | {error, Reason}`
+
+> 以被动模式接收来自套接字的数据包。已关闭的套接字由返回值{ error，close }表示。
+>
+> 只有当套接字处于**原始模式**并表示要读取的字节数时，参数长度才有意义。如果 Llength 为0，则返回所有可用字节。如果 Llength > 0，则返回正确的 Llength 字节，或者返回一个错误; 当从另一端关闭套接字时，可能丢弃少于 Llength 字节的数据。
+>
+> 可选的 Timeout 参数指定以毫秒为单位的超时。
 
 
 
+## send/2
+
+`send(Socket, Packet) -> ok | {error, Reason}`
+
+> 在套接字上发送数据包。
+
+## close/1
+
+`close(Socket) -> ok`
+
+> 关闭 TCP 套接字。
+>
+> 请注意，在大多数 TCP 实现中，执行关闭并不能保证在远程端检测到关闭之前将任何数据发送给接收方。如果希望保证将数据传递给收件人，有两种常见的方法可以实现这一点。
+>
+> - 使用 `gen_tcp: shutdown(Sock，write)`向对方发出不再发送数据的信号，并等待套接字的读取端关闭。
+> - 使用套接字选项{packet，N }(或类似的选项)使接收方在知道已经接收到所有数据时关闭连接成为可能。
+
+## shutdown/2
+
+` shutdown(Socket, write | read) -> ok | {error, Reason}`
+
+> 关闭套接字在一个或两个方向。
+>
+> `write`关闭向socket写的功能，从socket读功能还打开。
+>
+> `如果 How = = read 或者在 Socket 端口中没有缓冲的输出数据，套接字将立即关闭，并且任何遇到的错误都将在 Rational 中返回。
+
+
+
+## connect/3
+
+`connect(Address, Port, Options) -> {ok, Socket} | {error, Reason}`
+
+## connect/4
+
+`connect(Address, Port, Options, Timeout) -> {ok, Socket} | {error, Reason}`
+
+> 使用 IP 地址连接到主机上的 TCP 端口端口上的服务器。参数地址可以是主机名或 IP 地址。
+>
+> 可选的 Timeout 参数指定以毫秒为单位的超时。默认为infinity。
+>
+> 如果套接字处于{ active，N }模式(详见 `inet: setopts/2`)并且其消息计数器下降到0，则传递以下消息以指示套接字==已转换到被动==(`{ active，false }`)模式: `{tcp_passive, Socket}`
+>
+> 
+
+## controlling_process/2
+
+`controlling_process(Socket, Pid) -> ok | {error, Reason}`
+
+> 为套接字分配一个新的控制过程 PID。控制进程是从套接字接收消息的进程。如果由当前==控制进程==以外的任何其他进程调用，则返回{ error，not _ owner }。如果 Pid 标识的进程不是现有的==本地== Pid，则返回{ error，badarg }。{ error，badarg }在执行此函数期间关闭 Socket 的某些情况下也可能返回。
+>
+> 如果套接字设置为`active`模式，此函数将把**调用方邮箱中的任何消息传输到新的控制进程**。如果在传输过程中有任何其他进程与套接字进行交互，则传输可能无法正常工作，并且消息可能会保留在调用方的邮箱中。例如，在传输完成之前更改套接字活动模式可能会导致这种情况。
 
 # gen_udp
 
+## connect/3
 
+`connect(Socket, Address, Port) -> ok | {error, Reason}`
+
+> 连接 UDP 套接字只意味着存储 SockAddr 指定的指定(目标)套接字地址，以便系统知道将数据发送到哪里。
+>
+> 这意味着在发送数据报时不需要指定目标地址。也就是说，我们可以使用 send/2。
+>
+> 这还意味着套接字将只接收来自这个地址的数据。
+
+## open/1
+
+`open(Port) -> {ok, Socket} | {error, Reason}`
+
+## open/2
+
+`open(Port, [Opt]) -> {ok, Socket} | {error, Reason}`
+
+> 将 UDP 端口号(Port)与调用进程关联。
+>
+> Opt值可为：
+>
+> - list | binary 接收到的数据包作为什么类型传递
+> - {active, true | false | once | N}套接字模式
+
+## close/1
+
+`close(Socket) -> ok`
+
+> UDP套接字关闭。
+
+## recv/2
+
+` recv(Socket, Length) -> {ok, RecvData} | {error, Reason}`
+
+## recv/3
+
+`` recv(Socket, Length, Timeout) -> {ok, RecvData} | {error, Reason}``
+
+> 以被动模式(`{active, false}`)从套接字接收数据包。可选参数 Timeout 指定以毫秒为单位的超时。默认值为`infinity`。
+>
+> 
+
+## send/2
+
+ `send(Socket, Packet) -> ok | {error, Reason}`
+
+> 在已连接的套接字上发送数据包(参见 `connect/2`和 `connect/3`)。
+
+## send/3
+
+`send(Socket, Destination, Packet) -> ok | {error, Reason}`
+
+> 将数据包发送到指定的目的地。
+>
+> 此函数等效于 `gen_udp:send (Socket, Destination, [], Packet)`。
+
+## send/4
+
+`send(Socket, Host, Port, Packet) -> ok | {error, Reason}`
+
+> 将数据包发送到指定的主机和端口。
+>
+> 此子句等效于 `gen_udp:send (Socket、 Host、 Port、[]、 Packet)`。
+
+## send/5
+
+`send(Socket, Host, Port, AncData, Packet) -> ok | {error, Reason}`
+
+> 向指定的 Host 和 Port 发送数据包，并使用辅助数据 PacData。
+>
+> 参数 Host 可以是主机名或套接字地址，Port 可以是端口号或服务名原子。它们被解析成一个 Destination，然后这个函数等效于 send (Socket、 Destination、 Anc Data、 Packet) ，在那里读取辅助数据。
+
+
+
+## controlling_process/2
+
+`controlling_process(Socket, Pid) -> ok | {error, Reason}`
+
+> 为套接字分配一个新的控制过程 PID。控制进程是从套接字接收消息的进程。如果由当前控制进程以外的任何其他进程调用，则返回`{ error，not_owner }`。如果 Pid 标识的进程不是现有的本地 Pid，则返回`{ error，badarg }`。`{ error，badarg }`在执行此函数期间关闭 Socket 的某些情况下也可能返回。
 
 # observer
 
