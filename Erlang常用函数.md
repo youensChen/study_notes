@@ -81,7 +81,7 @@ Pid ! Msg.
 > - named_table：表可以通过Name来访问
 > - {keypos,Pos}：指定元组中Pos位置作为Key，默认为1
 > - 继承进程：{heir,Pid,HeirData} | {heir,none}，当进程终止时，Pid将继承其表，并发送消息，默认为{heir,none}
-> -  其他默认参数：{write_concurrency,false}, {read_concurrency,false}, {decentralized_counters,false}   
+> - 其他默认参数：{write_concurrency,false}, {read_concurrency,false}, {decentralized_counters,false}   
 
 ### dets:open_file/1
 
@@ -96,22 +96,22 @@ Pid ! Msg.
 
 
 > ```erlang
->     Arg  :: {'access', access()}
->           | {'auto_save', auto_save()}
->           | {'estimated_no_objects', non_neg_integer()}
->           | {'file', file:name()}
->           | {'max_no_slots', no_slots()}
->           | {'min_no_slots', no_slots()}
->           | {'keypos', keypos()}
->           | {'ram_file', boolean()}
->           | {'repair', boolean() | 'force'}
->           | {'type', type()}
+>  Arg  :: {'access', access()}
+>        | {'auto_save', auto_save()}
+>        | {'estimated_no_objects', non_neg_integer()}
+>        | {'file', file:name()}
+>        | {'max_no_slots', no_slots()}
+>        | {'min_no_slots', no_slots()}
+>        | {'keypos', keypos()}
+>        | {'ram_file', boolean()}
+>        | {'repair', boolean() | 'force'}
+>        | {'type', type()}
 > ```
 >
 > 其中Args列表的值如下
 >
 > - 表的类型 type：set | bag | duplicate_bag, 默认为 set
-> -  访问权限 access：read（只读） | read_write（读写），默认read_write
+> - 访问权限 access：read（只读） | read_write（读写），默认read_write
 > - 自动保存 auto_save(在一段时间后自动保存到磁盘) 默认180000
 > - 文件名  file 指定文件名
 > - {keypos,Pos}：指定元组中Pos位置作为Key，默认为1
@@ -665,6 +665,37 @@ ets:fun2ms(
 
 `apply(Module, Function, Args) -> term()`
 
+
+
+### send_after/3
+
+` erlang:send_after(Time, Dest, Msg) -> TimerRef`
+
+
+
+
+
+### send_after/4
+
+` erlang:send_after(Time, Dest, Msg, Options) -> TimerRef`
+
+> 启动计时器。当计时器过期时，消息 Msg 被发送到由 Dest 标识的进程。除了超时消息的格式之外，这个函数的工作方式与 `erlang: start_timer/4`完全一样。
+
+```erlang
+Types
+Time = integer()
+Dest = pid() | atom()
+Msg = term()
+Options = [Option]
+Abs = boolean()
+Option = {abs, Abs}
+TimerRef = reference()
+```
+
+
+
+
+
 # maps
 
 
@@ -957,4 +988,644 @@ ets:fun2ms(
 ## start/0
 
 > 打开进程信息监控gui程序
+
+
+
+
+
+# gen_server
+
+>  **gen_server工作流程** 
+>
+>  1. 调用`gen_server:start_link(Name, CallBackMod, StartArgs, Options)`来启动服务器
+>
+>  2. 第一个回调函数是 `CallBackMod:init(StartArgs)`，它必须返回`{ok, State}`， State作为`handle_call/3`的第三个参数重新出现
+>
+>  3. 停止服务器，`handle_call(stop, From, Tab)`返回`{stop, normal, stopped, Tab}`，它会停止服务器，第二个参数（normal）
+>
+>      被作为 `terminate(Reason, State)`的 第一个参数；第三个参数(stopped)会成为my_bank:stop/0的返回值
+>
+>  4. 要调用服务器，客户端需要调用`gen_server:call(Name, Request)`。它最终回调的是回调模块里的`handle_call/3`，其中Request作为`handle_call/3`的第一个参数，From为客户端PID，State为服务端状态
+>
+>  5. `handle_call/3`一定要有返回值给客户端，如果`handle_call/3`返回值为`{noreply...}`或者`{stop, Reason, State}`，
+>
+>      则需在`handle_call/3`结束前手动调用`gen_server:reply(From, Reply)`给客户端一个返回值（或者把返回值的任务交给其他进程）
+>
+>  6. `handle_call/3`一般会返回`{reply, Reply, NewState}`,Reply会作为客户端`gen_server:call/2`的返回值，NewState作为服务端的新状态
+>
+>  7. `gen_server:call/2`对应`handle_call/3`（有返回值，称为rpc）；`gen_server:cast/2`对应`handle_cast/3`（没有返回值，称为播发）
+>
+>  8. `handle_info/2`用来处理不是通过`gen_server:call/2`和`gen_server:cast/2`发给服务器的消息，如服务器连接到别的进程收到`{'EXIT', Pid, Why}`或者其他知道服务器PID的进程向他发送的消息（`PID ! Msg`）
+>
+>  9. 服务器停止或者崩溃前都会回调 `terminate(Reason, State)`，服务器将以Reason终止，需要在这里做必要的清理工作，也可以将此时的服务器状态保存到磁盘或者发送给其他进程
+>
+>  10. `code_change/3` 会在系统执行软件升级时由版本处理子系统调用
+
+## 创建
+
+### start/3
+
+`start(Mod, Args, Options) -> start_ret()`
+
+### start/4
+
+`start(ServerName, Mod, Args, Options) -> start_ret()`
+
+> 创建一个独立的 gen _ server 进程，也就是说，一个 `gen_server` 进程不是监督树的一部分，因此没有监督者。
+
+
+
+### start_link/3
+
+`start_link(Mod, Args, Options) -> start_ret() `
+
+
+
+### start_link/4
+
+`start_link(ServerName, Mod, Args, Options) -> start_ret() `
+
+> 创建 `gen_server` 进程作为监视树的一部分。这个函数将由主管直接或间接地调用。例如，它确保 `gen_server` 进程链接到管理员。
+
+```erlang
+Types:
+
+ServerName = 
+      {local,LocalName } 通过使用 register/2 使得gen_server进程 在本地注册为LocalName
+    | {global,GlobalName} 通过使用 global:register_name/2 使得gen_server进程 在全局注册为 GlobalName
+    | {via,Module,ViaName} 
+ LocalName = atom()
+ GlobalName = ViaName = term()
+Module = atom()
+Args = term()
+Options = [start_opt()]
+start_opt() =
+    {timeout, Timeout :: timeout()} % Gen_server 进程被允许花费多少毫秒进行初始化或终止，而 start 函数返回{ error，timeout }。
+    |  {spawn_opt, SpawnOptions :: [proc_lib:spawn_option()]} |
+    enter_loop_opt()
+start_ret() = 
+    {ok,Pid} 创建并初始化成功
+    | ignore  
+    | {error,Reason}  失败，如{error,{already_started,Pid}} 表示 FsmName创建的进程已存在
+ Pid = pid()
+ Error = {already_started,Pid} | term()
+```
+
+
+
+
+
+## 调用
+
+### call/2
+
+`call(server_ref(), Request) -> Reply`
+
+### call/3
+
+`server_ref(), Request, Timeout) -> Reply`
+
+> 通过发送请求并等待应答到达或超时发生，对 `gen_server` 进程的 `ServerRef` 进行==同步==调用。`Gen_server` 进程调用 `Module: handle_call/3`来处理请求。
+
+
+
+### multi_call/2
+
+> 对**多个节点**上名字**都**为`Name`的gen_server进程进行同步调用
+
+
+
+
+
+### cast/2
+
+`cast(server_ref(), Request) -> Reply`
+
+> 向 `gen_server` 进程的 `ServerRef` 发送一个异步请求并立即返回 ok，忽略目标节点或 `gen_server` 进程是否不存在。`Gen_server` 进程调用 `Module: handle_cast/2`来处理请求。
+
+## 停止
+
+### stop/1
+
+`stop(ServerRef) -> ok`
+
+
+
+### stop/3
+
+`stop(ServerRef , Reason, Timeout) -> ok`
+
+> 命令 ServerRef 指定的通用服务器退出，并使用指定的“Resaon”(默认为“normal”) ，然后等待服务器终止。Gen _ server 进程在退出之前调用 `Module: terminate/2`。
+>
+> 如果gen_server以预期的原因终止，则函数返回 ok。除了`normal`、`shutdown`或`{shutdown,Term}` 以外的任何其他原因都会导致使用 `logger(3)`发出错误报告。默认的`Reason`是`normal`。
+>
+> `Timeout` 是一个大于零的整数，它指定等待通用 gen_server终止或等待原子无穷大无限等待的毫秒数。默认值为`infinity`。如果未在指定时间内终止，则会引发超时异常。	
+>
+> 如果进程不存在，调用将以 noproc 原因退出调用进程，如果连接到运行服务器的远程节点失败，则以`{ nodedown，Node }`原因退出调用进程。
+
+```erlang
+Types:
+
+server_ref() =
+    pid() |
+    (LocalName :: atom()) |
+    {Name :: atom(), Node :: atom()} |
+    {global, GlobalName :: term()} |
+    {via, RegMod :: module(), ViaName :: term()}
+
+
+Reason = term()
+Timeout = int()>0 | infinity
+```
+
+
+
+## 回复
+
+### reply/2
+
+` reply(Client, Reply) -> ok`
+
+> `Gen_server` 进程可以使用这个函数向`call/2,3`或 `multi_call/2,3,4`的客户端==显式==发送一个应答，当应答不能在 `Module: handle _ call/3`的返回值中传递（即返回值形式为`{noreply...}`）时。
+
+
+
+
+
+## 回调函数
+
+### init/1
+
+` Module:init(Args) -> Result`
+
+```erlang
+Args = term()
+Result = {ok,State} 初始化成功
+  | {ok,State,Timeout} 初始化成功，进程在Timeout毫秒内没有收到请求或消息会超时
+  | {ok,State,hibernate} 初始化成功，进程进入休眠状态，等待下一条消息到达
+  | {ok,State,{continue,Continue}} 初始化成功，该进程将执行Module:handle_continue/2函数
+  | {stop,Reason} 初始化失败，原因是Reason
+  | ignore 初始化失败，原因是normal
+ State = term()
+ Timeout = timeout()
+ Reason = term()
+```
+
+> 每当使用 `start/3、4`、 `start_monitor/3、4`或 `start_link/3、4`启动 `gen_server` 进程时，新进程将调用此函数进行初始化。
+>
+> 
+
+
+
+### handle_call/3
+
+` Module:handle_call(Request, From, State) -> Result`
+
+> `Request`为请求，`From`为客户端PID， State为服务端旧状态
+>
+> ```erlang
+> Result如下：  
+> {reply,Reply,NewState}  有返回值,Reply将放回给客户端,服务器以NewState继续运行
+> | {reply,Reply,NewState,Timeout}   有返回值,Reply将放回给客户端,服务器以NewState继续运行,进程在Timeout毫秒内没有收到请求或消息会超时
+> | {reply,Reply,NewState,hibernate}  有返回值,Reply将放回给客户端,服务器以NewState继续运行,进程进入休眠状态，等待下一条消息到达
+> | {reply,Reply,NewState,{continue,Continue}} 有返回值,Reply将放回给客户端,服务器以NewState继续运行,该进程将执行Module:handle_continue/2函数
+> | {noreply,NewState} 没有返回值,服务器以NewState继续运行
+> | {noreply,NewState,Timeout} 没有返回值,服务器以NewState继续运行,进程在Timeout毫秒内没有收到请求或消息会超时
+> | {noreply,NewState,hibernate}  没有返回值,服务器以NewState继续运行,进程进入休眠状态，等待下一条消息到达
+> | {noreply,NewState,{continue,Continue}}   没有返回值,服务器以NewState继续运行,该进程将执行Module:handle_continue/2函数
+> | {stop,Reason,Reply,NewState} 服务器停止,并给调用者发送一个回应
+> | {stop,Reason,NewState} 服务器停止,不给调用者发送一个回应
+> ```
+
+### handle_cast/2
+
+` Module:handle_cast(Request, State) -> Result`
+
+> `Request`为请求，`From`为客户端PID， State为服务端旧状态
+>
+> ```erlang
+> Result如下：  
+> {noreply,NewState} 没有返回值,服务器以NewState继续运行
+> | {noreply,NewState,Timeout} 没有返回值,服务器以NewState继续运行,进程在Timeout毫秒内没有收到请求或消息会超时
+> | {noreply,NewState,hibernate}  没有返回值,服务器以NewState继续运行,进程进入休眠状态，等待下一条消息到达
+> | {noreply,NewState,{continue,Continue}} 没有返回值,服务器以NewState继续运行,该进程将执行Module:handle_continue/2函数
+> | {stop,Reason,NewState} 服务器停止,不给调用者发送一个回应
+> ```
+
+
+
+### handle_info/3
+
+` Module:handle_info(Info, State) -> Result`
+
+> `Request`为请求， State为服务端旧状态
+>
+> ```erlang
+> Result如下：  
+> {noreply,NewState}  没有返回值,服务器以NewState继续运行
+> | {noreply,NewState,Timeout}  没有返回值,服务器以NewState继续运行,进程在Timeout毫秒内没有收到请求或消息会超时
+> | {noreply,NewState,hibernate}  没有返回值,服务器以NewState继续运行,进程进入休眠状态，等待下一条消息到达
+> | {noreply,NewState,{continue,Continue}} 没有返回值,服务器以NewState继续运行,该进程将执行Module:handle_continue/2函数
+> | {stop,Reason,NewState} 服务器停止,不给调用者发送一个回应
+> ```
+
+
+
+# gen_fsm
+
+> 工作流程
+>
+> 1. ```erlang
+>     gen_fsm 回调函数和导出函数对应关系
+>     -----------------------------
+>     gen_fsm:start_link ----->Module:init/1 % 初始化
+>     gen_fsm:send_event ----->Module:StateName/2 % 处理异步事件
+>     gen_fsm:send_all_state_event ----->Module:handle_event/3 % 处理异步全局事件
+>     gen_fsm:sync_send_event ----->Module:StateName/3 % 处理同步事件
+>     gen_fsm:sync_send_all_state_event ----->Module:handle_sync_event/4 % 处理全局同步事件
+>     ------>Module:handle_info/3
+>     ------>Module:terminate/3
+>     ------>Module:code_change/4
+>         
+>     % 处理普通事件： 是 fsm 在 特定状态 接收到某个 特定事件 触发回调函数  
+>     % 处理全局事件： 是 fsm 在 任意状态 接收到某个 特定事件 触发回调函数
+>     % 区分是普通事件和全局事件的唯一标准是，看
+>     ```
+
+
+
+## 创建
+
+### start/3
+
+`start(Mod, Args, Options) -> Result`
+
+### start/4
+
+`start(FsmName, Mod, Args, Options) -> Result`
+
+> 创建一个独立的 gen_fsm 进程，也就是说，这个进程不是监督树的一部分，因此没有监督者。
+
+```erlang
+Types:
+FsmName = {local,Name} | {global,GlobalName}
+  | {via,Module,ViaName}
+ Name = atom()
+ GlobalName = ViaName = term()
+Module = atom()
+Args = term()
+Options = [Option]
+ Option = {debug,Dbgs} | {timeout,Time} | {spawn_opt,SOpts}
+  Dbgs = [Dbg]
+   Dbg = trace | log | statistics
+    | {log_to_file,FileName} | {install,{Func,FuncState}}
+  SOpts = [term()]
+Result = {ok,Pid} | ignore | {error,Error}
+ Pid = pid()
+ Error = {already_started,Pid} | term()
+```
+
+
+
+### start_link/3
+
+`start_link(Mod, Args, Options) -> Result `
+
+
+
+### start_link/4
+
+`start_link(FsmName, Mod, Args, Options) -> Result `
+
+> 创建一个 gen _ fsm 进程作为监视树的一部分。该函数将由主管直接或间接地调用。例如，它确保 gen _ fsm 进程链接到主管。
+
+
+
+```erlang
+Types:
+
+FsmName = 
+      {local,Name} 通过使用 register/2 使得 fsm进程 在本地注册为Name
+    | {global,GlobalName} 通过使用 global:register_name/2 使得 fsm进程 在全局注册为 GlobalName
+    | {via,Module,ViaName} 
+如果不提供名字，则fsm进程不注册
+ Name = atom()
+ GlobalName = ViaName = term()
+Module = atom()
+Args = term()
+Options = [Option]
+ Option = 
+      {debug,Dbgs}  
+    | {timeout,Time} 
+    | {spawn_opt,SOpts}
+  Dbgs = [Dbg]
+   Dbg = trace | log | statistics
+    | {log_to_file,FileName} | {install,{Func,FuncState}}
+  SOpts = [SOpt]
+   SOpt - see erlang:spawn_opt/2,3,4,5
+Result = 
+    {ok,Pid} 创建并初始化成功
+    | ignore  
+    | {error,Error}  失败，如{error,{already_started,Pid}} 表示 FsmName创建的进程已存在
+ Pid = pid()
+ Error = {already_started,Pid} | term()
+```
+
+
+
+## 调用
+
+### send_event/2
+
+`send_event(FsmRef, Event) -> ok`
+
+> 将事件==异步==发送到 gen _ fsm 进程的 FsmRef 并立即返回 ok。Gen _ fsm 进程调用 `Module: StateName/2`来处理事件，其中 StateName 是 gen_fsm 进程当前状态的名称。
+
+```
+Types:
+
+FsmRef = 
+     Name 
+  | {Name,Node} 
+  | {global,GlobalName}
+  | {via,Module,ViaName} | pid()
+ Name = Node = atom()
+ GlobalName = ViaName = term()
+Event = term()
+
+FsmRef can be any of the following:
+The pid
+Name, if the gen_fsm process is locally registered
+{Name,Node}, if the gen_fsm process is locally registered at another node
+{global,GlobalName}, if the gen_fsm process is globally registered
+{via,Module,ViaName}, if the gen_fsm process is registered through an alternative process registry
+```
+
+
+
+### send_all_state_event/2
+
+`send_all_state_event(FsmRef, Event) -> ok`
+
+> 将事件==异步==发送到 gen _ fsm 进程的 FsmRef 并立即返回 ok。Gen _ fsm 进程调用 `Module: handle _ event/3`来处理事件。
+
+
+
+### sync_send_event/2
+
+`sync_send_event(FsmRef, Event) -> Reply`
+
+
+
+### sync_send_event/3
+
+`sync_send_event(FsmRef, Event, Timeout) -> Reply`
+
+> ==同步== 将事件发送到 gen _ fsm 进程的 FsmRef，并==等待回复或超时发生==。Gen_fsm 进程调用 `Module: StateName/3`来处理事件，其中 StateName 是 gen _ fsm 进程当前状态的名称。
+
+
+
+```erlang
+Types:
+
+FsmRef = Name | {Name,Node} | {global,GlobalName}
+  | {via,Module,ViaName} | pid()
+ Name = Node = atom()
+ GlobalName = ViaName = term()
+Event = term()
+Timeout = int()>0 | infinity % Timeout 是一个大于零的整数，它指定等待应答的毫秒数，或无限长的原子等待时间。默认值为5000。如果在指定的时间内没有收到应答，则函数调用失败。
+Reply = term()
+```
+
+
+
+### sync_send_all_state_event/2
+
+`sync_send_all_state_event(FsmRef, Event) -> Reply`
+
+
+
+### sync_send_all_state_event/3
+
+`sync_send_all_state_event(FsmRef, Event, Timeout) -> Reply`
+
+> ==同步== 将全局事件发送到 gen_fsm 进程的 FsmRef，并等待回复或超时发生。`Gen_fsm` 进程调用 `Module: handle_sync_event/4`来处理事件
+
+
+
+```erlang
+Types:
+
+FsmRef = Name | {Name,Node} | {global,GlobalName}
+  | {via,Module,ViaName} | pid()
+ Name = Node = atom()
+ GlobalName = ViaName = term()
+Event = term()
+Timeout = int()>0 | infinity
+Reply = term()
+```
+
+
+
+## 停止
+
+### stop/1
+
+`stop(FsmRef) -> ok`
+
+
+
+### stop/3
+
+`stop(FsmRef, Reason, Timeout) -> ok`
+
+> 命令有限状态机使用指定的`Reason`退出，并等待它终止。Gen _ fsm 进程在退出之前调用 `Module: terminate/3`。
+>
+> 如果fsm以预期的原因终止，则函数返回 ok。除了`normal`、`shutdown`或`{shutdown,Term}` 以外的任何其他原因都会导致使用 `error_logger: format/2`发出错误报告。默认的`Reason`是`normal`。
+>
+> `Timeout` 是一个大于零的整数，它指定等待通用 FSM 终止或等待原子无穷大无限等待的毫秒数。默认值为`infinity`。如果泛型有限状态机未在指定时间内终止，则会引发超时异常。
+
+
+
+```erlang
+Types:
+
+FsmRef = Name | {Name,Node} | {global,GlobalName}
+  | {via,Module,ViaName} | pid()
+ Node = atom()
+ GlobalName = ViaName = term()
+Reason = term()
+Timeout = int()>0 | infinity
+```
+
+
+
+
+
+
+
+## 回调函数
+
+### init/1
+
+`init(Args) -> Result`
+
+```erlang
+Args = term(),该参数由 gen_fsm:start_link/4 中传过来
+Result = {ok,StateName} 初始化成功,
+  | {ok,StateName,Timeout} 初始化成功，进程在Timeout毫秒内没有收到请求或消息会超时
+  | {ok,StateName,hibernate} 初始化成功，进程进入休眠状态，等待下一条消息到达
+  | {stop,Reason} 初始化失败，原因是Reason
+  | ignore 初始化失败，原因是normal
+ StateName = atom(), StateName为状态名，表示下一个被调用的回调函数
+ Timeout = timeout()
+ Reason = term()
+```
+
+### StateName/2
+
+`StateName(Event, StateData) -> Result`
+
+**处理异步事件，==不需要==有返回值给事件发送者**
+
+> 每个可能的函数都应该有一个实例状态名。 每当 `gen_fsm` 接收到使用==`gen_fsm:send_event/2`==发送的事件时，与当前事件同名的 `StateName`回调函数会被调用来处理事件。 如果发生超时，也会调用它。
+
+```erlang
+Result = {next_state, NextStateName :: atom(), NextState :: #test_state{}} % NextStateName表示处理完当前事件后fsm状态转为NextStateName状态
+    |    {next_state, NextStateName :: atom(), NextState :: #test_state{}, timeout()} 
+    |    {next_state, NextStateName :: atom(), NextState :: #test_state{}, hibernate} 
+    |    {stop, Reason :: term(), NewState :: #test_state{}}). % 回调Module:terminate(Reason,StateName,NewStateData)
+```
+
+
+
+### StateName/3
+
+`StateName(Event, From, StateData) -> Result`
+
+**处理同步事件，==需要==有返回值给事件发送者**
+
+> 对于每个可能的状态名称，此函数都有一个实例。每当 `gen_fsm` 进程接收到使用 ==`gen_fsm:sync_send_event/2,3`==发送的事件时，将调用与当前状态名 StateName 同名的此函数的实例来处理该事件。
+
+```erlang
+Event = term()
+From = {pid(),Tag}
+StateData = term()
+Result = {reply,Reply,NextStateName,NewStateData}
+  | {reply,Reply,NextStateName,NewStateData,Timeout}
+  | {reply,Reply,NextStateName,NewStateData,hibernate}
+  | {next_state,NextStateName,NewStateData}
+  | {next_state,NextStateName,NewStateData,Timeout}
+  | {next_state,NextStateName,NewStateData,hibernate}
+  | {stop,Reason,Reply,NewStateData} | {stop,Reason,NewStateData}
+ Reply = term()
+ NextStateName = atom()
+ NewStateData = term()
+ Timeout = int()>0 | infinity
+ Reason = normal | term()
+```
+
+
+
+### handle_event/3
+
+`handle_event(Event, StateName, StateData) -> Result`
+
+**处理全局异步事件，==不需要==有返回值给事件发送者**
+
+> 只要 `gen_fsm` 进程接收到使用 ==`send_all_state_event/2`==发送的事件，就会调用该函数来处理该事件。
+>
+> ==`StateName`== 是 `gen_fsm` 进程的==当前==状态名
+
+```erlang
+Event = term()
+StateName = atom()
+StateData = term()
+Result = 
+    {next_state,NextStateName,NewStateData}
+  | {next_state,NextStateName,NewStateData,Timeout}
+  | {next_state,NextStateName,NewStateData,hibernate}
+  | {stop,Reason,NewStateData}
+ NextStateName = atom()
+ NewStateData = term()
+ Timeout = int()>0 | infinity
+ Reason = term()
+```
+
+
+
+### handle_sync_event/4
+
+`handle_sync_event(Event, From, StateName, StateData) -> Result`
+
+**处理全局同步事件，==需要==有返回值给事件发送者**
+
+> 每当 `gen_fsm` 进程接收到使用 ==`sync_send_all_state_event/2,3`==发送的事件时，将调用此函数来处理该事件。
+>
+> StateName 是 `gen_fsm` 进程的当前状态名。
+
+
+
+```erlang
+Event = term()
+From = {pid(),Tag}
+StateName = atom()
+StateData = term()
+Result = 
+    {reply,Reply,NextStateName,NewStateData}
+  | {reply,Reply,NextStateName,NewStateData,Timeout}
+  | {reply,Reply,NextStateName,NewStateData,hibernate}
+  | {next_state,NextStateName,NewStateData}
+  | {next_state,NextStateName,NewStateData,Timeout}
+  | {next_state,NextStateName,NewStateData,hibernate}
+  | {stop,Reason,Reply,NewStateData} | {stop,Reason,NewStateData}
+ Reply = term()
+ NextStateName = atom()
+ NewStateData = term()
+ Timeout = int()>0 | infinity
+ Reason = term()
+```
+
+### handle_info/3
+
+`handle_info(Info, StateName, StateData) -> Result`
+
+> 当接收到除同步或异步事件(或系统消息)之外的任何其他消息时，`gen_fsm`进程将调用该函数。
+
+```erlang
+Info = term() % 接收到的消息
+StateName = atom() % 当前状态
+StateData = term() 
+Result = 
+    {next_state,NextStateName,NewStateData}
+  | {next_state,NextStateName,NewStateData,Timeout}
+  | {next_state,NextStateName,NewStateData,hibernate}
+  | {stop,Reason,NewStateData}
+ NextStateName = atom()
+ NewStateData = term()
+ Timeout = int()>0 | infinity
+ Reason = normal | term()
+```
+
+
+
+### terminate/3
+
+`terminate(Reason, StateName, StateData) -> void`
+
+> 当即将终止时，`gen_fsm` 进程调用该函数。它是 `init/1`的对立面，做任何必要的清理。当它返回时，`gen _ fsm` 进程将终止为 `Reason`。==忽略返回值==。
+
+```erlang
+Reason = normal | shutdown | {shutdown,term()} | term()
+StateName = atom()
+StateData = term()
+```
+
+
+
+
+
+
+
+
 
