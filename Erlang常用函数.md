@@ -694,15 +694,329 @@ TimerRef = reference()
 
 
 
-
-
 # maps
 
 
 
 
 
+
+
 # lists
+
+## 判断
+
+### all/2
+
+`all(Pred, List) ->boolean()`
+
+> 如果 `Pred (Elem)`对 List 中的==所有==元素 Elem 返回 true，则返回 true，否则返回 false。Pred 函数必须返回一个布尔值。
+
+```erlang
+Types
+Pred = fun((Elem :: T) -> boolean())
+List = [T]
+T = term()
+```
+
+### any/2
+
+`any(Pred, List) ->boolean()`
+
+> 如果列表中==至少==有一个元素的 `Pred (Elem)`返回 true，则返回 true。Pred 函数必须返回一个布尔值。
+
+```erlang
+Types
+Pred = fun((Elem :: T) -> boolean())
+List = [T]
+T = term()
+```
+
+
+
+## 拼接
+
+### append/1
+
+` append(ListOfLists) -> List1`
+
+> 将一个由list组成的list拼接起来
+
+```erlang
+Types
+ListOfLists = [List]
+List = List1 = [T]
+T = term()
+
+lists:append([[1, 2, 3], [a, b], [4, 5, 6]]).
+[1,2,3,a,b,4,5,6]
+```
+
+
+
+### append/2
+
+` append(List1, List2) -> List3`
+
+> 返回一个新的列表 List3，该列表由列表1的元素和列表2的元素组成。
+
+```erlang
+List1 = List2 = List3 = [T]
+T = term()
+
+lists:append("abc", "def").
+"abcdef"
+```
+
+
+
+### concat/1
+
+`concat(Things) ->string()`
+
+> 将列表构造为字符串
+
+```erlang
+Things = [Thing]
+Thing = atom() | integer() | float() | string()
+string() = [char()]
+char() = 0..1114111
+An ASCII character or a unicode codepoint presented by an integer.
+
+> lists:concat([doc, '/', file, '.', 3]).
+"doc/file.3"
+```
+
+
+
+
+
+## 修改
+
+### delete/2
+
+` delete(Elem, List1) -> List2`
+
+> 返回 List1的副本，其中删除了与 Elem 匹配的==第一个==元素(如果存在这样的元素)。
+
+### droplast/1
+
+` droplast(List) -> InitList`
+
+> 删除 List 的最后一个元素。列表必须是非空的，否则函数会因为 `function_clause`而崩溃。
+
+```erlang
+1> lists:droplast([1,2,3,4,5]).
+[1,2,3,4
+2> lists:droplast([]).         
+** exception error: no function clause matching lists:droplast([]) (lists.erl, line 218)
+```
+
+### dropwhile/2
+
+`dropwhile(Pred, List1) -> List2`
+
+> 从 List1中删除 `Pred (Elem)`返回 true 的元素，并返回剩余的列表。Pred 函数必须返回一个布尔值。
+>
+> ==注意：Pred函数从列表头开始遍历判断，一旦返回false，立即中断遍历，不会遍历全部==
+
+```erlang
+10> lists:dropwhile(fun(X) -> X rem 2 == 0 end, [1,2,3,4]).  
+[1,2,3,4]
+11> lists:dropwhile(fun(X) -> X end, [true,false,true,false]). % 并没有把全部true删干净
+[false,true,false]
+12> lists:dropwhile(fun(X) -> X rem 2 == 0 end, [2,1,3,4]).   % 并没有把全部偶数删干净
+[1,3,4]
+13> lists:dropwhile(fun(X) -> X rem 2 == 0 end, [4, 2,1,3,4]).
+[1,3,4]
+```
+
+
+
+### filter/2
+
+`filter(Pred, List1) -> List2`
+
+> List2是列表1中所有 Elem 元素中Pred (Elem)为其返回 true的列表。Pred 函数必须返回一个布尔值。
+
+```erlang
+15> lists:filter(fun(X) -> X rem 2 == 0 end, [2,1,3,4]).   
+[2,4]
+```
+
+
+
+### filtermap/2
+
+` filtermap(Fun, List1) -> List2`
+
+> 对filter后的值再进行map操作
+
+
+
+
+
+
+
+### duplicate/2
+
+` duplicate(N, Elem) -> List`
+
+> 返回一个包含 N 个 Elem副本的列表。
+
+```erlang
+> lists:duplicate(5, xx).
+[xx,xx,xx,xx,xx]
+```
+
+
+
+### flatmap/2
+
+` flatmap(Fun, List1) -> List2`
+
+> map后（对每一项T map 为列表），然后拼接起来，如下：
+
+```erlang
+flatmap(Fun, List1) ->
+    append(map(Fun, List1)).
+
+> lists:flatmap(fun(X)->[X,X] end, [a,b,c]).
+[a,a,b,b,c,c]
+17> lists:flatmap(fun(X)-> [X, 1] end, [a,b,c]).
+[a,1,b,1,c,1]
+
+```
+
+
+
+### flatten/1
+
+` flatten(DeepList) -> List`
+
+> 将列表拍扁
+
+```erlang
+19> lists:flatten([[a, b], 1, 3, [[4]]]).
+[a,b,1,3,4]
+
+```
+
+### flatten/2
+
+` flatten(DeepList, Tail) -> List`
+
+> 将DeepList拍扁后，将Tail拼接到尾部
+
+```erlang
+21> lists:flatten([[a,b],1,3,[[4]]], [1,2,3,4]).
+[a,b,1,3,4,1,2,3,4]
+
+```
+
+
+
+
+
+## 遍历
+
+### enumerate/1
+
+` enumerate(List1) -> List2`
+
+> 将`List1`中每个元素T替换为`{Pos, T}`，其中`Pos`为`T`在`List1`中的索引，从1开始。
+
+```erlang
+> lists:enumerate([a,b,c]).
+[{1,a},{2,b},{3,c}]
+```
+
+### enumerate/2
+
+` enumerate(Index, List1) -> List2`
+
+> 将`List1`中每个元素T替换为`{Pos, T}`，其中`Pos`为`T`在`List1`中的索引，索引从`Index`开始。
+
+### foreach/2
+
+` foreach(Fun, List) -> ok`
+
+> 为 List 中的每个元素调用 Fun (Elem)。此函数用于其副作用，并且计算顺序被定义为与列表中元素的顺序相同。
+
+
+
+
+
+## 求值
+
+### flatlength/1
+
+` flatlength(DeepList) -> integer() >= 0`
+
+> 求列表拍扁后的长度
+>
+> 类似`length(flatten(DeepList))`，但是更高效
+
+
+
+### foldl/3
+
+`foldl(Fun, Acc0, List) -> Acc1`
+
+> 对 List 的连续元素 A 调用 Fun (Elem，AccIn) ，从 AccIn = = Acc0开始。Fun/2必须返回一个新的累加器，传递给下一个调用。函数返回累加器的最终值。如果列表为空，则返回 Acc0。
+
+```erlang
+Types
+Fun = fun((Elem :: T, AccIn) -> AccOut)
+Acc0 = Acc1 = AccIn = AccOut = term()
+List = [T]
+T = term()
+    
+> lists:foldl(fun(X, Sum) -> X + Sum end, 0, [1,2,3,4,5]).
+15
+> lists:foldl(fun(X, Prod) -> X * Prod end, 1, [1,2,3,4,5]).
+120
+```
+
+
+
+### foldr/3
+
+`foldr(Fun, Acc0, List) -> Acc1`
+
+> 和`lists:foldl/3`一样，不过是从列表尾部往头部遍历的顺序
+
+```erlang
+> P = fun(A, AccIn) -> io:format("~p ", [A]), AccIn end.
+#Fun<erl_eval.12.2225172>
+> lists:foldl(P, void, [1,2,3]).
+1 2 3 void
+> lists:foldr(P, void, [1,2,3]).
+3 2 1 void
+```
+
+
+
+### join/2
+
+` join(Sep, List1) -> List2`
+
+> 在List1的每个元素之间插入 Sep
+
+```erlang
+> lists:join(x, [a,b,c]).
+[a, x, b, x, c]
+> lists:join(x, [a]).
+[a]
+> lists:join(x, []).
+[]
+```
+
+
+
+## 元组列表
+
+
 
 
 
