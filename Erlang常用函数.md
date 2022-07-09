@@ -734,6 +734,32 @@ T = term()
 
 
 
+### member/2
+
+` member(Elem, List) -> boolean()`
+
+> 判断Elem是否在List中
+
+
+
+### prefix/2
+
+` prefix(List1, List2) -> boolean()`
+
+> 如果 List1是 List2的前缀，则返回 true，否则为 false。
+
+
+
+####  suffix/2
+
+` suffix(List1, List2) -> boolean()`
+
+> 如果 List1是 List2的后缀，则返回 true，否则为 false。
+
+
+
+
+
 ## 拼接
 
 ### append/1
@@ -833,6 +859,20 @@ An ASCII character or a unicode codepoint presented by an integer.
 
 
 
+` takewhile(Pred, List1) -> List2`
+
+> 从 List1中获取元素 Elem，而 Pred (Elem)返回 true，也就是说，函数返回所有元素都满足谓词的列表中最长的前缀。Pred 函数必须返回一个布尔值。
+>
+> ==注意：Pred函数从列表头开始遍历判断，一旦返回false，立即中断遍历，不会遍历全部==
+
+
+
+
+
+
+
+
+
 ### filter/2
 
 `filter(Pred, List1) -> List2`
@@ -914,6 +954,241 @@ flatmap(Fun, List1) ->
 
 ```
 
+### map/2
+
+` map(Fun, List1) -> List2`
+
+> 从 As 到 B 获取一个函数，然后获取一个 As 列表，并通过将该函数应用于列表中的每个元素来生成一个 B 列表。此函数用于获取返回值。评估顺序取决于实现。
+
+
+
+### merge/1
+
+` merge(ListOfLists) -> List1`
+
+> 返回通过合并 ListOfLists 的所有子列表形成的排序列表。在计算此函数之前，必须对所有子列表==进行排序==。当两个元素比较相等时，在 ListOfList 中位置最低的子列表中的元素被选择在另一个元素之前。
+
+```erlang
+23> lists:merge([[2,1], [4,1], [7,3]]).
+[2,1,4,1,7,3]
+24> lists:merge([[1,2], [4,5], [2,3]]).
+[1,2,2,3,4,5]
+25> 
+```
+
+
+
+### merge/2
+
+` merge(List1, List2) -> List3`
+
+> 返回合并列表1和列表2形成的排序列表。在计算这个函数之前，必须对 List1和 List2进行**排序**。当两个元素比较相等时，将在 List2的元素之前选择 List1的元素。
+
+### merge/3
+
+` merge(Fun, List1, List2) -> List3`
+
+> 返回合并列表1和列表2形成的排序列表。在计算这个函数之前，必须根据排序函数 Fun 对列表1和列表2进行排序。**如果 A 在排序中比较小于或等于 B，则 Fun (A，B)返回 true，否则返回 false**。当两个元素比较相等时，将在 List2的元素之前选择 List1的元素。
+
+### merge3/3
+
+` merge3(List1, List2, List3) -> List4`
+
+> 返回通过合并列表1、列表2和列表3形成的排序列表。在计算这个函数之前，必须对所有的列表1、列表2和列表3进行排序。当两个元素比较相等时，如果存在这样的元素，则在另一个元素之前选择 List1中的元素，否则在 List3中的元素之前选择 List2中的元素。
+
+### partition/2
+
+` partition(Pred, List) -> {Satisfying, NotSatisfying}`
+
+> 将list分为两部分
+
+```erlang
+> lists:partition(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]).
+{[1,3,5,7],[2,4,6]}
+> lists:partition(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]).
+{[a,b,c,d,e],[1,2,3,4]}
+```
+
+### split/2
+
+` split(N, List1) -> {List2, List3}`
+
+> 将 List1拆分为 List2和 List3.List2包含前 N 个元素，List3包含其余的元素(Nth tail)。
+
+### splitwith/2
+
+` splitwith(Pred, List) -> {List1, List2}`
+
+> 根据 Pred. splitwith/2将 Partitions List 分成两个列表，其行为如下所示:
+
+```erlang
+splitwith(Pred, List) ->
+    {takewhile(Pred, List), dropwhile(Pred, List)}.
+
+> lists:splitwith(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]).
+{[1],[2,3,4,5,6,7]}
+> lists:splitwith(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]).
+{[a,b],[1,c,d,2,3,4,e]}
+```
+
+
+
+### sublist/2
+
+` sublist(List1, Len) -> List2`
+
+> 返回列表1的子列表，从位置1开始，带有(最大值) Len 元素。Len 超过列表的长度不是错误，在这种情况下返回整个列表。
+
+### sublist/3
+
+` sublist(List1, Start, Len) -> List2`
+
+> 返回从 Start 开始并带有(最大值) Len 元素的 List1的子列表。Start + Len 超过列表长度不是错误。
+
+```erlang
+> lists:sublist([1,2,3,4], 2, 2).
+[2,3]
+> lists:sublist([1,2,3,4], 2, 5).
+[2,3,4]
+> lists:sublist([1,2,3,4], 5, 2).
+[]
+```
+
+### subtract/2
+
+`subtract(List1, List2) -> List3`
+
+> 与A -- B 效果一致
+
+### reverse/1
+
+` reverse(List1) -> List2`
+
+> 反转list
+
+### reverse/2
+
+` reverse(List1, Tail) -> List2`
+
+> 返回一个列表，其中列表1中的元素按相反的顺序排列，并附加尾部
+
+```erlang
+> lists:reverse([1, 2, 3, 4], [a, b, c]).
+[4,3,2,1,a,b,c]
+```
+
+### sort/1
+
+` sort(List1) -> List2`
+
+> 返回一个包含列表1中已排序(升序)元素的列表。
+
+```erlang
+27> lists:sort([4,2,5,1,7]).
+[1,2,4,5,7]
+
+```
+
+### sort/2
+
+` sort(Fun, List1) -> List2`
+
+> 根据排序函数 Fun 返回一个包含列表1中已排序元素的列表。如果 A 在排序中比较小于或等于 B，则 Fun (A，B)返回 true，否则返回 false。
+
+```erlang
+28> lists:sort(fun(A, B) -> A >= B end , [4,2,5,1,7]). % 升序
+[7,5,4,2,1]
+29> lists:sort(fun(A, B) -> A =< B end , [4,2,5,1,7]). % 降序
+[1,2,4,5,7]
+30> 
+```
+
+### usort/1
+
+`usort(List1) -> List2`
+
+> 返回一个包含 List1的已排序元素的列表，其中**除了相等元素的第一个元素之外的所有元素都已删除**。即不包含重复元素
+
+```erlang
+33> lists:usort([4,2,1,4,3,2,5,1]).
+[1,2,3,4,5]
+```
+
+### zip/2
+
+` zip(List1, List2) -> List3`
+
+> 将两个长度相等的列表“ Zip”为一个由两个元组组成的列表，其中每个元组的第一个元素取自第一个列表，第二个元素取自第二个列表中的相应元素。
+
+```erlang
+Types
+List1 = [A]
+List2 = [B]
+List3 = [{A, B}]
+A = B = term()
+```
+
+
+
+### zipwith/3
+
+` zipwith(Combine, List1, List2) -> List3`
+
+
+
+```erlang
+> lists:zipwith(fun(X, Y) -> X+Y end, [1,2,3], [4,5,6]).
+[5,7,9]
+```
+
+### zipwith3/4
+
+` zipwith3(Combine, List1, List2, List3) -> List4`
+
+```erlang
+> lists:zipwith3(fun(X, Y, Z) -> X+Y+Z end, [1,2,3], [4,5,6], [7,8,9]).
+[12,15,18]
+> lists:zipwith3(fun(X, Y, Z) -> [X,Y,Z] end, [a,b,c], [x,y,z], [1,2,3]).
+[[a,x,1],[b,y,2],[c,z,3]]
+```
+
+
+
+
+
+### unzip/1
+
+` unzip(List1) -> {List2, List3}`
+
+> 将两个元素组成的元组的列表解压缩为两个列表，其中第一个列表包含每个元组的第一个元素，第二个列表包含每个元组的第二个元素。
+
+```erlang
+Types
+List1 = [{A, B}]
+List2 = [A]
+List3 = [B]
+A = B = term()
+```
+
+### unzip3/1
+
+`unzip3(List1) -> {List2, List3, List4}`
+
+> 将三个元素组成的元组列表解压缩为三个列表，其中第一个列表包含每个元组的第一个元素，第二个列表包含每个元组的第二个元素，第三个列表包含每个元组的第三个元素
+
+### uniq/1
+
+` uniq(List1) -> List2`
+
+> 返回一个清单，其中包含已删除重复元素的 List1元素(保留元素的顺序)。保留每个元素的第一个匹配项。==即删除重复元素，值保留一个==
+
+```erlang
+> lists:uniq([3,3,1,2,1,2,3]).
+[3,1,2]
+> lists:uniq([a, a, 1, b, 2, a, 3]).
+[a, 1, b, 2, 3]
+```
+
 
 
 
@@ -942,6 +1217,29 @@ flatmap(Fun, List1) ->
 ` foreach(Fun, List) -> ok`
 
 > 为 List 中的每个元素调用 Fun (Elem)。此函数用于其副作用，并且计算顺序被定义为与列表中元素的顺序相同。
+
+### seq/2
+
+` seq(From, To) -> Seq`
+
+### seq/3
+
+` seq(From, To, Incr) -> Seq`
+
+> 返回一个整数序列，该序列以 From 开头，包含将 Incr 添加到前一个元素的后续结果，直到到达或传递 To (在后一种情况下，To 不是序列的一个元素)。缺省值为1。
+
+```erlang
+> lists:seq(1, 10).
+[1,2,3,4,5,6,7,8,9,10]
+> lists:seq(1, 20, 3).
+[1,4,7,10,13,16,19]
+> lists:seq(1, 0, 1).
+[]
+> lists:seq(10, 6, 4).
+[]
+> lists:seq(1, 1, 0).
+[1]
+```
 
 
 
@@ -1012,11 +1310,201 @@ T = term()
 []
 ```
 
+### last/1
+
+` last(List) -> Last`
+
+> 返回列表中的最后一个元素
+
+### mapfoldl/3
+
+` mapfoldl(Fun, Acc0, List1) -> {List2, Acc1}`
+
+> 结合map和fold
+
+```erlang
+Fun = fun((A, AccIn) -> {B, AccOut})
+Acc0 = Acc1 = AccIn = AccOut = term()
+List1 = [A]
+List2 = [B]
+A = B = term()
+    
+> lists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end, 0, [1,2,3,4,5]).
+{[2,4,6,8,10], 15}
+```
+
+### mapfoldr/3
+
+` mapfoldr(Fun, Acc0, List1) -> {List2, Acc1}`
+
+> 和 `mapfoldl/3`一致，不过从列表尾部到 头部的顺序遍历
+
+### max/1
+
+` max(List) -> Max`
+
+> 返回列表中的的一个最大值
+
+min/1
+
+` min(List) -> Min` 
+
+> 返回列表中的的一个最小值
+
+
+
+sum/1
+
+` sum(List) -> number()`
+
+> 返回 List 中元素的和。
+
+
+
+### nth/2
+
+` nth(N, List) -> Elem`
+
+> 返回索引为N的元素
+
+### nthtail/2
+
+` nthtail(N, List) -> Tail`
+
+> 返回 List 的第 N 个尾部，即 List 的子列表，从 N + 1开始，一直到列表的末尾。
+
+```erlang
+> lists:nthtail(3, [a, b, c, d, e]).
+[d,e]
+> tl(tl(tl([a, b, c, d, e]))).
+[d,e]
+> lists:nthtail(0, [a, b, c, d, e]).
+[a,b,c,d,e]
+> lists:nthtail(5, [a, b, c, d, e]).
+[]
+```
+
+### search/2
+
+` search(Pred, List) -> {value, Value} | false`
+
+> 如果 List 中有一个 Value，使得 Pred (Value)返回 true，则对于==第一个==这样的 Value 返回`{ value，Value }` ，否则返回 false。Pred 函数必须返回一个布尔值。
+
+
+
 
 
 ## 元组列表
 
+### keydelete/3
 
+` keydelete(Key, N, TupleList1) -> TupleList2`
+
+> 返回 TupleList1的副本，其中删除元组的==第一个==匹配项，该元组的 Nth 元素与 Key 相等，如果存在这样的元组。
+
+```erlang
+Types
+Key = term()
+N = integer() >= 1
+1..tuple_size(Tuple)
+TupleList1 = TupleList2 = [Tuple]
+Tuple = tuple()
+```
+
+
+
+### keyfind/3
+
+` keyfind(Key, N, TupleList) -> Tuple | false`
+
+> 在元组列表中搜索其 Nth 元素与 Key 相等的元组。如果找到这样的元组，则返回元组，否则为 false。
+
+
+
+### keymap/3
+
+` keymap(Fun, N, TupleList1) -> TupleList2`
+
+> 返回一个元组列表，其中对于 TupleList1中的每个元组，元组的第 N 个元素 Term1已被替换为调用 Fun (Term1)的结果。
+
+```erlang
+> Fun = fun(Atom) -> atom_to_list(Atom) end.
+#Fun<erl_eval.6.10732646>
+2> lists:keymap(Fun, 2, [{name,jane,22},{name,lizzie,20},{name,lydia,15}]).
+[{name,"jane",22},{name,"lizzie",20},{name,"lydia",15}]
+```
+
+
+
+### keymember/3
+
+` keymember(Key, N, TupleList) -> boolean()`
+
+> 如果 TupleList 中有一个元组，其 Nth 元素与 Key 相等，则返回 true，否则返回 false。
+
+
+
+### keymerge/3
+
+` keymerge(N, TupleList1, TupleList2) -> TupleList3`
+
+> 返回合并 TupleList1和 TupleList2形成的排序列表。Merge 在每个元组的第 N 个元素上执行。在计算此函数之前，TupleList1和 TupleList2都必须按键排序。当两个元组比较相等时，将在 TupleList2的元组之前选择来自 TupleList1的元组。
+
+### ukeymerge/3
+
+> u代表不包含重复项
+
+
+
+### keyreplace/4
+
+` keyreplace(Key, N, TupleList1, NewTuple) -> TupleList2`
+
+> 返回 TupleList1的一个副本，其中，如果有这样一个元组 T，则将其 Nth 元素与 Key 相等的 T 元组的第一个匹配项替换为 NewTuple。
+
+
+
+### keysearch/3
+
+` keysearch(Key, N, TupleList) -> {value, Tuple} | false`
+
+> 在元组列表中搜索其 Nth 元素与 Key 相等的元组。如果找到这样的元组，返回`{ value，Tuple }` ，否则为 false。
+>
+> 函数 `keyfind/3`通常比较方便，这个函数会保留给向下兼容使用。
+
+
+
+### keysort/2
+
+` keysort(N, TupleList1) -> TupleList2` 
+
+> 返回一个包含列表 TupleList1的已排序元素的列表。对元组的 Nth 元素执行排序(==升序==)。这种类型是稳定的。
+
+```erlang
+22> lists:keysort(1,[{1,a}, {4,c}, {2, a}, {0, f}]).
+[{0,f},{1,a},{2,a},{4,c}]
+
+```
+
+### ukeysort/2
+
+
+
+
+
+### keystore/4
+
+` keystore(Key, N, TupleList1, NewTuple) -> TupleList2`
+
+> 返回 TupleList1的一个副本，其中，如果有这样一个 tuple T，其 Nth 元素与 Key 相等的 tuple T 的第一个匹配项将被==替换==为 NewTuple。如果没有这样的元组 T，则返回已将[ NewTuple ]==追加到末尾的== TupleList1的副本。
+
+
+
+### keytake/3
+
+` keytake(Key, N, TupleList1) -> {value, Tuple, TupleList2} | false` 
+
+> 在元组列表 TupleList1中搜索其 Nth 元素与 Key 相等的元组。返回{ value，Tuple，TupleList2} ，否则为 false。TupleList2是 tuplelist1的一个副本，其中==删除==了 Tuple 的第一个匹配项。
 
 
 
