@@ -696,13 +696,555 @@ TimerRef = reference()
 
 # maps
 
+## 修改
+
+### new/0
+
+` new() -> Map`
+
+> 返回一个新的`map`。
+
+### filter/2
+
+` filter(Pred, MapOrIter) -> Map`
+
+> 返回其谓词 Pred 在 MapOrIter 中为 true 的映射 Map。
+>
+> 如果 MapOrIter 不是一个映射或有效的迭代器，那么调用失败时会出现{ badmap，Map }异常; 如果 Pred 不是一个属性2的函数，那么调用失败时会出现 badarg 异常。
+
+```erlang
+Types
+Pred = fun((Key, Value) -> boolean())
+MapOrIter = #{Key => Value} | iterator(Key, Value)
+Map = #{Key => Value}
+    
+> M = #{a => 2, b => 3, c=> 4, "a" => 1, "b" => 2, "c" => 4},
+Pred = fun(K,V) -> is_atom(K) andalso (V rem 2) =:= 0 end,
+maps:filter(Pred,M).
+#{a => 2,c => 4}
+```
+
+### map/2
+
+` map(Fun, MapOrIter) -> Map`
+
+> 通过对每个 Key 调用 funf (Key，Value1)函数生成一个新的 Map Map，以任意顺序对 MapOrIter 的 value1关联进行估值。函数 Fun/2必须返回与新地图映射的关键键相关联的值 Value2。
+>
+> 如果 MapOrIter 不是一个映射或有效迭代器，那么调用失败时会出现{ badmap，Map }异常; 如果 Fun 不是一个属性2的函数，那么调用失败时会出现 badarg 异常。
+
+```erlang
+Types
+Fun = fun((Key, Value1) -> Value2)
+MapOrIter = #{Key => Value1} | iterator(Key, Value1)
+Map = #{Key => Value2}
+    
+> Fun = fun(K,V1) when is_list(K) -> V1*2 end,
+  Map = #{"k1" => 1, "k2" => 2, "k3" => 3},
+  maps:map(Fun,Map).
+#{"k1" => 2,"k2" => 4,"k3" => 6}
+```
 
 
 
+
+
+### filtermap/2
+
+` filtermap(Fun, MapOrIter) -> Map`
+
+> 返回一个map该map是对每个 Key 调用 `Fun (Key，Value1)`的结果，以任意顺序对 MapOrIter 的 Value1关联进行估值。
+>
+> 如果 `Fun (Key，Value1)`返回 true，则将关联复制到结果映射。如果返回 false，则不复制关联。如果返回{ true，NewValue } ，键的值将被替换为 NewValueat，这个位置将在结果映射中被替换。
+>
+> 如果 MapOrIter 不是一个映射或有效迭代器，那么调用失败时会出现{ badmap，Map }异常; 如果 Fun 不是一个属性2的函数，那么调用失败时会出现 badarg 异常。
+
+```erlang
+> Fun = fun(K,V) when is_atom(K) -> {true, V*2}; (_,V) -> (V rem 2) =:= 0 end,
+  Map = #{k1 => 1, "k2" => 2, "k3" => 3},
+  maps:filtermap(Fun,Map).
+#{k1 => 2,"k2" => 2}
+```
+
+### from_keys/2
+
+` from_keys(Keys, Value) -> Map`
+
+> 获取键和值的列表，并构建一个映射，其中==所有键都指向相同的值==。键可以是任何顺序，键和值可以是任何术语。
+
+```erlang
+> Keys = ["a", "b", "c"], maps:from_keys(Keys, ok).
+#{"a" => ok,"b" => ok,"c" => ok}
+```
+
+### from_list/1
+
+` from_list(List) -> Map`
+
+> 获取键值元组列表并构建map。关联可以是任何顺序，关联中的键和值可以是任何术语。如果同一个键出现不止一次，则使用后一个(最右侧)值，并忽略前一个值。
+
+```erlang
+> List = [{"a",ignored},{1337,"value two"},{42,value_three},{"a",1}],
+  maps:from_list(List).
+#{42 => value_three,1337 => "value two","a" => 1}
+```
+
+### to_list/1
+
+` to_list(Map) -> [{Key, Value}]`
+
+> 返回表示 Map 的键-值关联的对列表，其中以任意顺序返回对[{ K1，V1} ，... ，{ Kn，Vn }]。
+>
+> 如果 Map 不是 Map，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> Map = #{42 => value_three,1337 => "value two","a" => 1},
+  maps:to_list(Map).
+[{42,value_three},{1337,"value two"},{"a",1}]
+```
+
+
+
+
+
+### intersect/2
+
+` intersect(Map1, Map2) -> Map3`
+
+> 将两张地图相交成 Map3。如果两个映射中都存在一个键，则 Map1中的值将被 Map2中的值取代。
+>
+> 如果 Map1或 Map2不是映射，则调用失败，并出现`{ badmap，Map }`异常。
+
+```erlang
+> Map1 = #{a => "value_one", b => "value_two"},
+  Map2 = #{a => 1, c => 2},
+  maps:intersect(Map1,Map2).
+#{a => 1}
+```
+
+### intersect_with/3
+
+` intersect_with(Combiner, Map1, Map2) -> Map3`
+
+> 将两张地图相交成一张地图 Map3。如果两个地图中都存在一个键，则通过组合器 fun 将 Map1中的值与 Map2中的值组合在一起。当应用 Combiner 时，存在于两个映射中的键是第一个参数，来自 Map1的值是第二个参数，来自 Map2的值是第三个参数。
+>
+> 如果 Map1或 Map2不是映射，则调用失败，并出现{ badmap，Map }异常。如果 Combiner 不是一个带有三个参数的有趣的程序，则调用失败，并出现一个 badarg 异常。
+
+```erlang
+Types
+Map1 = #{Key => Value1}
+Map2 = #{term() => Value2}
+Combiner = fun((Key, Value1, Value2) -> CombineResult)
+Map3 = #{Key => CombineResult}
+    
+> Map1 = #{a => "value_one", b => "value_two"},
+  Map2 = #{a => 1, c => 2},
+  maps:intersect_with(fun(_Key, Value1, Value2) -> {Value1, Value2} end, Map1, Map2).
+#{a => {"value_one",1}}
+
+```
+
+### merge/2
+
+` merge(Map1, Map2) -> Map3`
+
+> 将两个地图合并为一个地图 Map3。如果两个映射中都存在两个键，Map1中的值将被 Map2中的值取代。
+>
+> 如果 Map1或 Map2不是映射，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> Map1 = #{a => "value_one", b => "value_two"},
+  Map2 = #{a => 1, c => 2},
+  maps:merge(Map1,Map2).
+#{a => 1,b => "value_two",c => 2}
+```
+
+### merge_with/3
+
+` merge_with(Combiner, Map1, Map2) -> Map3`
+
+> 将两个地图合并为一个地图 Map3。如果两个地图中都存在一个键，则通过组合器 fun 将 Map1中的值与 Map2中的值组合在一起。当应用 Combiner 时，存在于两个映射中的键是第一个参数，来自 Map1的值是第二个参数，来自 Map2的值是第三个参数。
+>
+> 如果 Map1或 Map2不是映射，则调用失败，并出现{ badmap，Map }异常。如果 Combiner 不是一个带有三个参数的有趣的程序，则调用失败，并出现一个 badarg 异常。
+
+```erlang
+Types
+Map1 = #{Key1 => Value1}
+Map2 = #{Key2 => Value2}
+Combiner = fun((Key1, Value1, Value2) -> CombineResult)
+Map3 = #{Key1 => CombineResult, Key1 => Value1, Key2 => Value2}
+    
+> Map1 = #{a => "value_one", b => "value_two"},
+  Map2 = #{a => 1, c => 2},
+  maps:merge_with(fun(_Key, Value1, Value2) -> {Value1, Value2} end, Map1, Map2).
+#{a => {"value_one",1},b => "value_two",c => 2}
+```
+
+### put/3
+
+` put(Key, Value, Map1) -> Map2`
+
+> 将 Key 与 Value 关联并将关联插入到 map Map2中。如果在 Map1中键 Key 已经存在，那么**旧的关联值将被 Value 替换**。该函数返回一个新的 map Map2，其中包含 Map1中的新关联和旧关联。
+>
+> 如果 Map1不是映射，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> Map = #{"a" => 1}.
+#{"a" => 1}
+> maps:put("a", 42, Map).
+#{"a" => 42}
+> maps:put("b", 1337, Map).
+#{"a" => 1,"b" => 1337}
+```
+
+### update/3
+
+` update(Key, Value, Map1) -> Map2`
+
+> 如果在 Map1中存在 Key，那么**旧的关联值将被 Value 替换**。该函数返回一个新的地图 Map2，其中包含新的关联值。
+>
+> 如果 Map1不是映射，则调用失败，出现{ badmap，Map }异常; 如果没**有值与 Key 关联**，则出现`{ badkey，Key }`**异常**。
+
+```erlang
+> Map = #{"a" => 1}.
+#{"a" => 1}
+> maps:update("a", 42, Map).
+#{"a" => 42}
+```
+
+### update_with/3
+
+` update_with(Key, Fun, Map1) -> Map2`
+
+> 通过对旧值调用 Fun 来更新与 Key 关联的 Map1中的值，以获得新值。如果映射中**不存在** Key，则生成**异常**`{ badkey，Key }`。
+
+```erlang
+Types
+Map1 = #{Key := Value1, term() => term()}
+Map2 = #{Key := Value2, term() => term()}
+Fun = fun((Value1) -> Value2)
+          
+> Map = #{"counter" => 1},
+  Fun = fun(V) -> V + 1 end,
+  maps:update_with("counter",Fun,Map).
+#{"counter" => 2}
+```
+
+### update_with/4
+
+` update_with(Key, Fun, Init, Map1) -> Map2`
+
+> 通过对旧值调用 Fun 来更新与 Key 关联的 Map1中的值，以获得新值。如果在 Map1中**没有** Key，那么 **Init** 将与 Key 关联。即没有该key则插入一个{key, value}
+
+```erlang
+> Map = #{"counter" => 1},
+  Fun = fun(V) -> V + 1 end,
+  maps:update_with("new counter",Fun,42,Map).
+#{"counter" => 1,"new counter" => 42}
+```
+
+
+
+
+
+### remove/2
+
+` remove(Key, Map1) -> Map2`
+
+> 从 Map1中移除 Key (如果存在)及其相关值，并返回一个没有 Key 的新 map Map2。
+>
+> 如果 Map1不是映射，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> Map = #{"a" => 1}.
+#{"a" => 1}
+> maps:remove("a",Map).
+#{}
+> maps:remove("b",Map).
+#{"a" => 1}
+```
+
+
+
+### with/2
+
+` with(Ks, Map1) -> Map2`
+
+> 从Map1中提取key在Ks中的元素，返回一个新的地图 Map2，其键 K1到 Kn 以及它们在地图 Map1中的相关值。将忽略 Map1中不存在的任何 K 中的键。
+
+```erlang
+> Map = #{42 => value_three,1337 => "value two","a" => 1},
+  Ks = ["a",42,"other key"],
+  maps:with(Ks,Map).
+#{42 => value_three,"a" => 1}
+```
+
+### without/2
+
+` without(Ks, Map1) -> Map2`
+
+> 和with相反， 从Map1中提取key==不在==Ks中的元素
+
+```erlang
+> Map = #{42 => value_three,1337 => "value two","a" => 1},
+  Ks = ["a",42,"other key"],
+  maps:without(Ks,Map).
+#{1337 => "value two"}
+```
+
+### groups_from_list/2
+
+` groups_from_list(Fun, List) -> MapOut`
+
+> 分组，结果是一个map，其中每个key是由 `Fun` 的返回值，每个值是一个列表，列表元素是Fun的入参。每个列表中元素的顺序保留在列表中。
+
+```erlang
+> maps:groups_from_list(fun(X) -> X rem 2 end, [1,2,3]).
+#{0 => [2], 1 => [1, 3]}
+> maps:groups_from_list(fun erlang:length/1, ["ant", "buffalo", "cat", "dingo"]).
+#{3 => ["ant", "cat"], 5 => ["dingo"], 7 => ["buffalo"]}
+```
+
+### groups_from_list/3
+
+` groups_from_list(Fun, ValueFun, List) -> MapOut` 
+
+> 分组，结果是一个map，其中每个key是由 `Fun` 的返回值，每个值是一个列表，列表元素是ValueFun的返回值。每个列表中元素的顺序保留在列表中。
+
+
+
+```erlang
+> maps:groups_from_list(fun(X) -> X rem 2 end, fun(X) -> X*X end, [1,2,3]).
+#{0 => [4], 1 => [1, 9]}
+> maps:groups_from_list(fun erlang:length/1, fun lists:reverse/1, ["ant", "buffalo", "cat", "dingo"]).
+#{3 => ["tna","tac"],5 => ["ognid"],7 => ["olaffub"]}
+```
+
+
+
+## 求值
+
+### find/2
+
+` find(Key, Map) -> {ok, Value} | error`
+
+> 返回一个元组{ ok，Value } ，其中 Value 是与 Key 关联的值，如果 Map 中没有值与 Key 关联，则返回错误。
+>
+> 如果 Map 不是 Map，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> Map = #{"hi" => 42},
+  Key = "hi",
+  maps:find(Key,Map).
+{ok,42}
+```
+
+### get/2
+
+` get(Key, Map) -> Value`
+
+> 如果 Map 不是映射，则调用会失败为{ badmap，Map }异常; 如果**没有**值与 Key 关联，则调用会失败为`{ badkey，Key }`**异常**。
+
+```erlang
+> Key = 1337,
+  Map = #{42 => value_two,1337 => "value one","a" => 1},
+  maps:get(Key,Map).
+"value one"
+```
+
+### get/3
+
+` get(Key, Map, Default) -> Value | Default`
+
+> 如果 Map 包含 Key，返回与 Key 关联的值。如果==没有==与 Key 关联的值，则==返回默认值==。
+>
+> 如果 Map 不是 Map，则调用失败，并出现{ badmap，Map }异常
+
+```erlang
+> Map = #{ key1 => val1, key2 => val2 }.
+#{key1 => val1,key2 => val2}
+> maps:get(key1, Map, "Default value").
+val1
+> maps:get(key3, Map, "Default value").
+"Default value"
+```
+
+```erlang
+> Map = #{42 => value_two,1337 => "value one","a" => 1},
+  maps:size(Map).
+3
+```
+
+### take/2
+
+` take(Key, Map1) -> {Value, Map2} | error` 
+
+> 该函数从 Map1中**删除** Key (如果存在的话)及其相关值，并返回一个元组，其中移除了 Value，而**新的 map Map2没有键 Key**。如果键不存在，则返回`error`。
+>
+> 如果 Map1不是映射，则调用将失败，并出现`{ badmap，Map }`异常。
+
+```erlang
+> Map = #{"a" => "hello", "b" => "world"}.
+#{"a" => "hello", "b" => "world"}
+> maps:take("a",Map).
+{"hello",#{"b" => "world"}}
+> maps:take("does not exist",Map).
+error
+```
+
+
+
+### fold/3
+
+` fold(Fun, Init, MapOrIter) -> Acc`
+
+> 以任意顺序调用每个键的 f (Key，Value，AccIn)来调用 MapOrIter 的 Value 关联。函数 fun F/3必须返回一个新的累加器，该累加器被传递给下一个连续调用。这个函数返回累加器的最终值。如果 map 为空，则返回初始累加器值 Init。
+>
+> 如果 MapOrIter 不是一个映射或有效迭代器，那么调用失败时带有{ badmap，Map }异常; 如果 Fun 不是一个属性3的函数，则带有 badarg 异常。
+
+```erlang
+Types
+Fun = fun((Key, Value, AccIn) -> AccOut)
+Init = term()
+Acc = AccOut
+AccIn = Init | AccOut
+MapOrIter = #{Key => Value} | iterator(Key, Value)
+    
+> Fun = fun(K,V,AccIn) when is_list(K) -> AccIn + V end,
+  Map = #{"k1" => 1, "k2" => 2, "k3" => 3},
+  maps:fold(Fun,0,Map).
+6
+```
+
+### keys/1
+
+`keys(Map) -> Keys`
+
+> 以任意顺序返回位于 Map 中的键的完整列表。
+>
+> 如果 Map 不是 Map，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> Map = #{42 => value_three,1337 => "value two","a" => 1},
+  maps:keys(Map).
+[42,1337,"a"]
+```
+
+### values/1
+
+` values(Map) -> Values` 
+
+> 以任意顺序返回 Map Map 中包含的值的完整列表。
+>
+> 如果 Map 不是 Map，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> Map = #{42 => value_three,1337 => "value two","a" => 1},
+  maps:values(Map).
+[value_three,"value two",1]
+```
+
+
+
+
+
+
+
+### size/1
+
+` size(Map) -> integer() >= 0` 
+
+> 返回 Map 中键-值关联的数量。此操作在**常量**时间内进行。
+
+```erlang
+> Map = #{"a" => "hello", "b" => "world"}.
+#{"a" => "hello", "b" => "world"}
+> maps:take("a",Map).
+{"hello",#{"b" => "world"}}
+> maps:take("does not exist",Map).
+error
+```
+
+
+
+
+
+## 判断
+
+### is_key/2
+
+` is_key(Key, Map) -> boolean()`
+
+> 如果 Map Map 包含 Key，则返回 true; 如果 Map Map 不包含 Key，则返回 false。
+>
+> 如果 Map 不是 Map，则调用失败，并出现`{ badmap，Map }`异常。
+
+```erlang
+> Map = #{"42" => value}.
+#{"42" => value}
+> maps:is_key("42",Map).
+true
+> maps:is_key(value,Map).
+false
+```
+
+
+
+
+
+
+
+## 遍历
+
+### foreach/2
+
+` foreach(Fun, MapOrIter) -> ok`
+
+> 在 MapOrIter，以任何顺序调用 fun f (键，值)为每个键来进行值联合。
+>
+> 如果 MapOrIter 不是一个映射或有效迭代器，那么调用失败时会出现{ badmap，Map }异常; 如果 Fun 不是一个属性2的函数，那么调用失败时会出现 badarg 异常。
+
+```erlang
+Types
+Fun = fun((Key, Value) -> term())
+MapOrIter = #{Key => Value} | iterator(Key, Value)
+```
+
+### iterator/1
+
+` iterator(Map) -> Iterator`
+
+> 返回一个映射迭代器 Iterator，它可以被 map: next/1用来遍历映射中的键-值关联。在对映射进行迭代时，无论映射的大小如何，内存使用都保证是有界的。
+>
+> 如果 Map 不是 Map，则调用失败，并出现{ badmap，Map }异常。
+
+```erlang
+> M = #{ a => 1, b => 2 }.
+#{a => 1,b => 2}
+> I = maps:iterator(M), ok.
+ok
+> {K1, V1, I2} = maps:next(I), {K1, V1}.
+{a,1}
+> {K2, V2, I3} = maps:next(I2),{K2, V2}.
+{b,2}
+> maps:next(I3).
+none
+```
+
+### next/1
+
+` next(Iterator) -> {Key, Value, NextIterator} | none`
+
+> 返回 Iterator 中的下一个键-值关联以及迭代器中其余关联的新迭代器。
+>
+> 如果迭代器中没有更多的关联，则返回`none`。
 
 
 
 # lists
+
+
+
+
 
 ## 判断
 
